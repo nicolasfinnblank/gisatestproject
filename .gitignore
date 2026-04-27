@@ -22,3 +22,5 @@ mta_archives/
 build/ui-deployer/
 build/dist/
 env/
+
+test/data/Test1-Combinations.csv

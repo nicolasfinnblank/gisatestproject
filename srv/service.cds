@@ -13,4 +13,6 @@ service test1Srv {
   entity FirstNames as projection on my.FirstNames;
   @odata.draft.enabled
   entity LastNames as projection on my.LastNames;
+  @odata.draft.enabled
+  entity PostCodes as projection on my.PostCodes;
 }

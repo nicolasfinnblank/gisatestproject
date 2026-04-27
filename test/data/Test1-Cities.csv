@@ -1,0 +1,367 @@
+﻿ID,cityName
+1cty,Albrechts bei Suhl
+2cty,Allersdorf bei Ilmenau
+3cty,Altenfeld bei Ilmenau
+4cty,Alt Necheln
+5cty,Aschenhausen
+6cty,Beichlingen
+7cty,Below bei Röbel
+8cty,Beuna (Geiseltal)
+9cty,Böhlen
+10cty,Brunnhartshausen
+11cty,Deuna
+12cty,Diedorf bei Bad Salzungen
+13cty,Dietzhausen
+14cty,Eckardtshausen
+15cty,Förtha
+16cty,Friedersdorf
+17cty,Fürnsbach
+18cty,Gehaus
+19cty,Gehlberg
+20cty,Gerterode bei Niederorschel
+21cty,Geusa
+22cty,Gillersdorf
+23cty,Gischow
+24cty,Golchen bei Sternberg
+25cty,Grabow bei Röbel
+26cty,Hausen
+27cty,Heidesheim am Rhein
+28cty,Herschdorf bei Ilmenau
+29cty,Hümpfershausen
+30cty,Hundeshagen
+31cty,Kallmerode
+32cty,Kaltensundheim
+33cty,Kaltenwestheim
+34cty,Keez
+35cty,Kleinbartloff
+36cty,Kummerow bei Stralsund
+37cty,Leussow bei Ludwigslust
+38cty,Ludorf
+39cty,Marksuhl
+40cty,Massow
+41cty,Melpers
+42cty,Metzels
+43cty,Neidhartshausen
+44cty,Neu Bartelshagen
+45cty,Neu Necheln
+46cty,Neustadt am Rennsteig
+47cty,Oberkatz
+48cty,Oepfershausen
+49cty,Petersdorf bei Strasburg
+50cty,Schmiedefeld am Rennsteig
+51cty,Setzin
+52cty,Spitzkunnersdorf
+53cty,Stadtlengsfeld
+54cty,Thurow bei Sternberg
+55cty,Unterkatz
+56cty,Unterweid
+57cty,Urnshausen
+58cty,Vesser
+59cty,Vipperow
+60cty,Wackernheim
+61cty,Wahns
+62cty,Wambacherhof
+63cty,Wichtshausen
+64cty,Wildenspring
+65cty,Willmersdorf bei Ilmenau
+66cty,Wolfsburg-Unkeroda
+67cty,Wredenhagen
+68cty,Zella bei Bad Salzungen
+69cty,Zepkow
+70cty,Oberweißbach /Thüringer Wald
+71cty,Frankenroda
+72cty,Glasehausen
+73cty,Hirzlei
+74cty,Penkow
+75cty,Rieth bei Torgelow
+76cty,Voigtsdorf bei Freiberg
+77cty,Wolfsgrund
+78cty,Hohes Kreuz
+79cty,Appen
+80cty,Barmstedt
+81cty,Burg (Dithmarschen)
+82cty,Ellerau
+83cty,Elmshorn
+84cty,Fahrdorf
+85cty,Garding
+86cty,Halstenbek
+87cty,Hanerau-Hademarschen
+88cty,Kampen (Sylt)
+89cty,Kellenhusen (Ostsee)
+90cty,Laboe
+91cty,List auf Sylt
+92cty,Malente
+93cty,Nordhastedt
+94cty,Nordstrand
+95cty,Pellworm
+96cty,Reinfeld (Holstein)
+97cty,St. Michaelisdonn
+98cty,Schafflund
+99cty,Stockelsdorf
+100cty,Tellingstedt
+101cty,Wenningstedt-Braderup (Sylt)
+102cty,Wesselburen
+103cty,Wilster
+104cty,Asendorf bei Bruchhausen-Vilsen
+105cty,Bad Bodenteich
+106cty,Bad Nenndorf
+107cty,Barsinghausen
+108cty,Calberlah
+109cty,Clenze
+110cty,Cremlingen
+111cty,Dassel
+112cty,Diekholzen
+113cty,Giesen bei Hildesheim
+114cty,Hechthausen
+115cty,Kalefeld
+116cty,Katlenburg-Lindau
+117cty,Kirchlinteln
+118cty,Lamspringe
+119cty,Polle
+120cty,Rosengarten
+121cty,Sassenburg
+122cty,Warmsen
+123cty,Wietzen
+124cty,Wischhafen
+125cty,Dahlem bei Kall
+126cty,Kall
+127cty,Kranenburg
+128cty,Wachtberg
+129cty,Bischoffen
+130cty,Ebsdorfergrund
+131cty,Eppstein
+132cty,Frankenau
+133cty,Greifenstein
+134cty,Hauneck
+135cty,Heidenrod
+136cty,Kriftel
+137cty,Leun
+138cty,Limeshain
+139cty,Meinhard bei Eschwege
+140cty,Niedernhausen
+141cty,Raunheim
+142cty,Rauschenberg
+143cty,Ronneburg
+144cty,Runkel
+145cty,Schauenburg
+146cty,Schrecksbach
+147cty,Staufenberg
+148cty,Villmar
+149cty,Waldbrunn (Westerwald)
+150cty,Waldems
+151cty,Asbach
+152cty,Edenkoben
+153cty,Hagenbach
+154cty,Hinterweidenthal
+155cty,Hornbach
+156cty,Kelberg
+157cty,Rheinzabern
+158cty,Rhens
+159cty,Selters (Westerwald)
+160cty,Trippstadt
+161cty,Waldsee
+162cty,Winnweiler
+163cty,Abstatt
+164cty,Aichwald
+165cty,Bad Bellingen
+166cty,Bernau im Schwarzwald
+167cty,Billigheim
+168cty,Breisach am Rhein
+169cty,Buggingen
+170cty,Dietingen bei Rottweil
+171cty,Eberhardzell
+172cty,Efringen-Kirchen
+173cty,Ehrenkirchen
+174cty,Eichstetten am Kaiserstuhl
+175cty,Eisenbach (Hochschwarzwald)
+176cty,Emmendingen
+177cty,Emmingen-Liptingen
+178cty,Endingen am Kaiserstuhl
+179cty,Engelsbrand
+180cty,Ertingen
+181cty,Fichtenau
+182cty,Fridingen an der Donau
+183cty,Geisingen
+184cty,Graben-Neudorf
+185cty,Grafenhausen
+186cty,Gundelfingen
+187cty,Hagnau am Bodensee
+188cty,Haslach im Kinzigtal
+189cty,Iffezheim
+190cty,Ilsfeld
+191cty,Immendingen
+192cty,Jestetten
+193cty,Krautheim
+194cty,Kuchen
+195cty,Langenargen
+196cty,Langenbrettach
+197cty,Langenenslingen
+198cty,Lauterbach
+199cty,Malterdingen
+200cty,Neckarwestheim
+201cty,Neudenau
+202cty,Neuweiler
+203cty,Oberndorf am Neckar
+204cty,Obersulm
+205cty,Oberteuringen
+206cty,Owingen
+207cty,Pfinztal
+208cty,Reute
+209cty,Rickenbach
+210cty,Riegel
+211cty,Rielasingen-Worblingen
+212cty,Rot an der Rot
+213cty,Rot am See
+214cty,Sasbach bei Achern
+215cty,Schefflenz
+216cty,Schliengen
+217cty,Schopfheim
+218cty,Sinzheim bei Baden-Baden
+219cty,Sipplingen
+220cty,Starzach
+221cty,Stegen
+222cty,Sulzburg
+223cty,Tengen
+224cty,Todtmoos
+225cty,Ubstadt-Weiher
+226cty,Vogt
+227cty,Vogtsburg im Kaiserstuhl
+228cty,Waldkirch
+229cty,Werbach
+230cty,Wolpertswende
+231cty,Wyhl am Kaiserstuhl
+232cty,Zell im Wiesental
+233cty,Allershausen
+234cty,Altmannstein
+235cty,Andechs
+236cty,Arnstorf
+237cty,Arzberg
+238cty,Bad Steben
+239cty,Beratzhausen
+240cty,Denkendorf
+241cty,Dinkelscherben
+242cty,Eckersdorf
+243cty,Eichendorf
+244cty,Eurasburg bei Wolfratshausen
+245cty,Feldafing
+246cty,Furth im Wald
+247cty,Gangkofen
+248cty,Gars am Inn
+249cty,Gessertshausen
+250cty,Gilching
+251cty,Harburg (Schwaben)
+252cty,Hauzenberg
+253cty,Hemau
+254cty,Hohenwart
+255cty,Hunderdorf bei Bogen
+256cty,Igensdorf
+257cty,Jandelsbrunn
+258cty,Kelheim
+259cty,Kissing
+260cty,Langweid am Lech
+261cty,Lichtenau
+262cty,Neubeuern
+263cty,Neukirchen beim Heiligen Blut
+264cty,Neumarkt-Sankt Veit
+265cty,Neureichenau
+266cty,Neustadt an der Donau
+267cty,Nittendorf
+268cty,Oberkotzau
+269cty,Oettingen in Bayern
+270cty,Penzberg
+271cty,Petershausen
+272cty,Pommelsbrunn
+273cty,Prichsenstadt
+274cty,Puchheim
+275cty,Putzbrunn
+276cty,Rain
+277cty,Randersacker
+278cty,Reichenberg
+279cty,Samerberg
+280cty,Sauerlach
+281cty,Schnaitsee
+282cty,Schwarzach am Main
+283cty,Schwarzenbach am Wald
+284cty,Schweitenkirchen
+285cty,Simbach
+286cty,Sinzing
+287cty,Spalt
+288cty,Stadtlauringen
+289cty,Stegaurach
+290cty,Steinbach am Wald
+291cty,Thannhausen
+292cty,Tiefenbach
+293cty,Unterthingau
+294cty,Waakirchen
+295cty,Welden bei Augsburg
+296cty,Wilhelmsthal
+297cty,Zusmarshausen
+298cty,Gersheim
+299cty,Lenzen (Elbe)
+300cty,Meyenburg
+301cty,Niemegk
+302cty,Sonnewalde
+303cty,Gadebusch
+304cty,Hagenow
+305cty,Lubmin
+306cty,Arnsdorf bei Dresden
+307cty,Bad Elster
+308cty,Eppendorf
+309cty,Falkenstein /Vogtl.
+310cty,Gelenau
+311cty,Geringswalde
+312cty,Gornau
+313cty,Gornsdorf
+314cty,Kurort Oberwiesenthal
+315cty,Kurort Seiffen
+316cty,Lengefeld
+317cty,Neuhausen /Erzgebirge
+318cty,Olbernhau
+319cty,Ottendorf-Okrilla
+320cty,Penig
+321cty,Rochlitz
+322cty,Scheibenberg
+323cty,Wilsdruff
+324cty,Eilsleben
+325cty,Ermsleben
+326cty,Schwanebeck bei Oschersleben
+327cty,Bad Blankenburg
+328cty,Berga /Elster
+329cty,Birkenfelde bei Heilbad Heiligenstadt
+330cty,Eichstruth
+331cty,Geisa
+332cty,Hallungen
+333cty,Lenterode
+334cty,Lutter bei Heilbad Heiligenstadt
+335cty,Mackenrode bei Heilbad Heiligenstadt
+336cty,Rodeberg
+337cty,Schalkau
+338cty,Steinheuterode
+339cty,Thalwenden
+340cty,Uder
+341cty,Balingen
+342cty,Jahnatal
+343cty,Hartmannsdorf bei Gera
+344cty,Rannstedt
+345cty,Langenbach bei Wissen
+346cty,Neuschlade
+347cty,Ebersteinerhof
+348cty,Tastrup bei Flensburg
+349cty,Radegast bei Gadebusch
+350cty,Reinhardswinden
+351cty,Kölleda
+352cty,Moosburg an der Isar
+353cty,Lübz
+354cty,Göhlen bei Ludwigslust
+355cty,Woldegk
+356cty,Toddin
+357cty,Leutersdorf
+358cty,Falkenstein
+359cty,Nordhausen
+360cty,Amt Creuzburg
+361cty,Schwieberdingen
+362cty,Brauneberg
+363cty,Luckow bei Torgelow
+364cty,Kirchberg an der Murr
+365cty,Langenwetzendorf
+366cty,Wonfurt

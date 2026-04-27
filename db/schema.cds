@@ -67,3 +67,14 @@ annotate PostCodes with @assert.unique :
 {
     postCode : [ postCode ],
 };
+
+entity HouseNumbers : cuid
+{
+    houseNumber : Integer
+        @mandatory;
+}
+
+annotate HouseNumbers with @assert.unique :
+{
+    houseNumber : [ houseNumber ],
+};

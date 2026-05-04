@@ -15,7 +15,7 @@ module.exports = class test1Srv extends cds.ApplicationService {
             const existing = await SELECT.from(GeneratorData);
             if (existing.length > 0) return; 
 
-            console.log('🚀 GeneratorData is empty. Generating rows...');
+            console.log('GeneratorData is empty. Generating rows...');
 
             // Fetch master data
             const [streets, cts, hoods, fNames, lNames, pCodes, hNumbers] = await Promise.all([
@@ -27,7 +27,7 @@ module.exports = class test1Srv extends cds.ApplicationService {
 
             // Safety check: Make sure CSVs actually loaded data
             if (streets.length === 0) {
-                console.error('❌ Error: Master data (StreetNames) is empty. Check your CSV files!');
+                console.error('Error: Master data (StreetNames) is empty. Check CSV files!');
                 return;
             }
 

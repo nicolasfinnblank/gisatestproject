@@ -1,42 +1,16 @@
 using { Test1 as my } from '../db/schema.cds';
 
 @path : '/service/test1'
-service test1Srv
-{
-    @odata.draft.enabled
-    entity StreetNames as
-        projection on my.StreetNames;
+service test1Srv {
+    
+    entity StreetNames as projection on my.StreetNames;
+    entity Cities as projection on my.Cities;
+    entity Neighborhoods as projection on my.Neighborhoods;
+    entity FirstNames as projection on my.FirstNames;
+    entity LastNames as projection on my.LastNames;
+    entity PostCodes as projection on my.PostCodes;
+    entity HouseNumbers as projection on my.HouseNumbers;
 
-    @odata.draft.enabled
-    entity Cities as
-        projection on my.Cities;
-
-    @odata.draft.enabled
-    entity Neighborhoods as
-        projection on my.Neighborhoods;
-
-    @odata.draft.enabled
-    entity FirstNames as
-        projection on my.FirstNames;
-
-    @odata.draft.enabled
-    entity LastNames as
-        projection on my.LastNames;
-
-    @odata.draft.enabled
-    entity PostCodes as
-        projection on my.PostCodes;
-
-    @odata.draft.enabled
-    entity HouseNumbers as
-        projection on my.HouseNumbers;
-
-    action Action1
-    (
-    );
+    @odata.draft.enabled: false
+    entity GeneratorData as projection on my.GeneratorData;
 }
-
-annotate test1Srv with @requires :
-[
-    'authenticated-user'
-];

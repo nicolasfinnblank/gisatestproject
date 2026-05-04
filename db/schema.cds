@@ -8,10 +8,7 @@ entity StreetNames : cuid
         @mandatory;
 }
 
-annotate StreetNames with @assert.unique :
-{
-    streetName : [ streetName ],
-};
+
 
 entity Cities : cuid
 {
@@ -19,10 +16,7 @@ entity Cities : cuid
         @mandatory;
 }
 
-annotate Cities with @assert.unique :
-{
-    cityName : [ cityName ],
-};
+
 
 entity Neighborhoods : cuid
 {
@@ -30,10 +24,7 @@ entity Neighborhoods : cuid
         @mandatory;
 }
 
-annotate Neighborhoods with @assert.unique :
-{
-    neighborhoodName : [ neighborhoodName ],
-};
+
 
 entity FirstNames : cuid
 {
@@ -41,10 +32,6 @@ entity FirstNames : cuid
         @mandatory;
 }
 
-annotate FirstNames with @assert.unique :
-{
-    firstName : [ firstName ],
-};
 
 entity LastNames : cuid
 {
@@ -52,10 +39,7 @@ entity LastNames : cuid
         @mandatory;
 }
 
-annotate LastNames with @assert.unique :
-{
-    lastName : [ lastName ],
-};
+
 
 entity PostCodes : cuid
 {
@@ -77,4 +61,17 @@ entity HouseNumbers : cuid
 annotate HouseNumbers with @assert.unique :
 {
     houseNumber : [ houseNumber ],
+};
+
+
+
+entity GeneratorData {
+    key concatID     : String;
+    streetName       : String(100);
+    cityName         : String(100);
+    neighborhoodName : String(100);
+    firstName        : String(50);
+    lastName         : String(50);
+    postCode         : Integer;
+    houseNumber      : Integer;
 };

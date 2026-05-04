@@ -24,3 +24,4 @@ build/dist/
 env/
 
 test/data/Test1-Combinations.csv
+test/data/Test1-GeneratorTest.csv

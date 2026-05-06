@@ -3,6 +3,19 @@ const { DELETE } = require('@sap/cds/lib/ql/cds-ql');
 
 module.exports = class test1Srv extends cds.ApplicationService {
     async init() {
+
+        try {
+            // Check if a core mock table exists
+            await cds.run(SELECT.one.from('Mock_BusinessPartner'));
+        } catch (err) {
+            if (err.message.includes('no such table')) {
+                console.log("🛠️  Missing tables detected. Auto-deploying schema to db.sqlite...");
+                const model = await cds.load('*'); 
+                await cds.deploy(model).to('sqlite:db.sqlite');
+                console.log("✅ Auto-deployment successful. Environment is ready.");
+            }
+        }
+
         const { 
             StreetNames, Cities, Neighborhoods, 
             FirstNames, LastNames, PostCodes, 

@@ -13,4 +13,6 @@ service test1Srv {
 
     @odata.draft.enabled: false
     entity GeneratorData as projection on my.GeneratorData;
+    action generateTestCustomers(anzahl : Integer) returns String;
+    action pushToBackend() returns String;
 }

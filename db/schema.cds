@@ -8,15 +8,11 @@ entity StreetNames : cuid
         @mandatory;
 }
 
-
-
 entity Cities : cuid
 {
     cityName : String(100)
         @mandatory;
 }
-
-
 
 entity Neighborhoods : cuid
 {
@@ -24,22 +20,17 @@ entity Neighborhoods : cuid
         @mandatory;
 }
 
-
-
 entity FirstNames : cuid
 {
     firstName : String(50)
         @mandatory;
 }
 
-
 entity LastNames : cuid
 {
     lastName : String(50)
         @mandatory;
 }
-
-
 
 entity PostCodes : cuid
 {
@@ -54,7 +45,7 @@ annotate PostCodes with @assert.unique :
 
 entity HouseNumbers : cuid
 {
-    houseNumber : Integer
+    houseNumber : String(3)
         @mandatory;
 }
 
@@ -63,15 +54,14 @@ annotate HouseNumbers with @assert.unique :
     houseNumber : [ houseNumber ],
 };
 
-
-
-entity GeneratorData {
-    key concatID     : String;
-    streetName       : String(100);
-    cityName         : String(100);
+entity GeneratorData
+{
+    key concatID : String;
+    streetName : String(100);
+    cityName : String(100);
     neighborhoodName : String(100);
-    firstName        : String(50);
-    lastName         : String(50);
-    postCode         : Integer;
-    houseNumber      : Integer;
-};
+    firstName : String(50);
+    lastName : String(50);
+    postCode : Integer;
+    houseNumber : Integer;
+}

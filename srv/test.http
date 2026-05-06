@@ -1,0 +1,13 @@
+
+POST http://localhost:4004/service/test1/generateTestCustomers
+Content-Type: application/json
+
+{
+  "anzahl": 30
+}
+###
+
+POST http://localhost:4004/service/test1/pushToBackend
+Content-Type: application/json
+
+{}

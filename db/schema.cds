@@ -34,7 +34,7 @@ entity LastNames : cuid
 
 entity PostCodes : cuid
 {
-    postCode : Integer
+    postCode : String(5)
         @mandatory;
 }
 

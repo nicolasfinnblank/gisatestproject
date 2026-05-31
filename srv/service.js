@@ -14,8 +14,8 @@ module.exports = class test1Srv extends cds.ApplicationService {
     async init() {
 
         try {
-            // Check if a core mock table exists
-            await cds.run(SELECT.one.from('Mock_BusinessPartner'));
+            // Check if the core tables are already deployed
+            await cds.run(SELECT.one.from('Test1.GeneratorData'));
         } catch (err) {
             if (err.message.includes('no such table')) {
                 console.log("🛠️  Missing tables detected. Auto-deploying schema to db.sqlite...");
@@ -37,22 +37,10 @@ module.exports = class test1Srv extends cds.ApplicationService {
             const numberrows = anzahl || 10;
 
             try {
-                // 1. Wipe mock data safely if tables exist
-                try {
-                    await SELECT.one.from('Mock_Address');
-                    await SELECT.one.from('Mock_BusinessPartner');
-                    
-                    await DELETE.from('Mock_Address');
-                    await DELETE.from('Mock_BusinessPartner');
-                    console.log("🗑️ Previous mock data cleared.");
-                } catch (dbErr) {
-                    console.log("⚠️ Mock tables not found; skipping deletion.");
-                }
-
-                // 2. Wipe existing GeneratorData to start fresh
+                // 1. Wipe existing GeneratorData to start fresh
                 await DELETE.from(GeneratorData);
 
-                // 3. Fetch master data
+                // 2. Fetch master data
                 const [streets, cts, hoods, fNames, lNames, pCodes, hNumbers] = await Promise.all([
                     SELECT.from(StreetNames), SELECT.from(Cities),
                     SELECT.from(Neighborhoods), SELECT.from(FirstNames),

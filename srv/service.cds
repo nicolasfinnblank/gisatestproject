@@ -1,6 +1,7 @@
 using { Test1 as my } from '../db/schema.cds';
 
 @path : '/service/test1'
+@requires : 'Generator'
 service test1Srv {
     
     entity StreetNames as projection on my.StreetNames;
@@ -11,7 +12,11 @@ service test1Srv {
     entity PostCodes as projection on my.PostCodes;
     entity HouseNumbers as projection on my.HouseNumbers;
 
+    // Jeder Nutzer sieht/aendert nur seine eigenen generierten Zeilen.
     @odata.draft.enabled: false
+    @restrict: [
+        { grant: '*', to: 'Generator', where: 'createdBy = $user' }
+    ]
     entity GeneratorData as projection on my.GeneratorData;
     action generateTestCustomers(anzahl : Integer) returns String;
     action pushToBackend() returns String;

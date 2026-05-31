@@ -33,12 +33,13 @@ module.exports = class test1Srv extends cds.ApplicationService {
 
         // --- HANDLER: Generate Test Customers ---
         this.on('generateTestCustomers', async (req) => {
-            const { anzahl } = req.data; 
+            const { anzahl } = req.data;
             const numberrows = anzahl || 10;
+            const owner = req.user.id || 'anonymous';
 
             try {
-                // 1. Wipe existing GeneratorData to start fresh
-                await DELETE.from(GeneratorData);
+                // 1. Nur die EIGENEN bisherigen Zeilen loeschen (Multi-User-sicher)
+                await DELETE.from(GeneratorData).where({ createdBy: owner });
 
                 // 2. Fetch master data
                 const [streets, cts, hoods, fNames, lNames, pCodes, hNumbers] = await Promise.all([
@@ -73,7 +74,8 @@ module.exports = class test1Srv extends cds.ApplicationService {
                         firstName: f.firstName,
                         lastName: l.lastName,
                         postCode: p.postCode,
-                        houseNumber: h.houseNumber
+                        houseNumber: h.houseNumber,
+                        createdBy: owner
                     });
                 }
 
@@ -94,7 +96,9 @@ module.exports = class test1Srv extends cds.ApplicationService {
                 // Verbindung zum Backend-Service (lokal gemockt bzw. in Produktion das echte S/4)
                 const backend = await cds.connect.to('BackendAPI_2');
 
-                const localCustomers = await SELECT.from(GeneratorData);
+                // Nur die EIGENEN generierten Zeilen pushen (Multi-User-sicher)
+                const owner = req.user.id || 'anonymous';
+                const localCustomers = await SELECT.from(GeneratorData).where({ createdBy: owner });
                 if (localCustomers.length === 0) return req.error(400, "Local database is empty. Generate data first.");
 
                 let pushed = 0;

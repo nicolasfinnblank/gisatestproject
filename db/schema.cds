@@ -64,4 +64,7 @@ entity GeneratorData
     lastName : String(50);
     postCode : String(5);
     houseNumber : String(3);
+    // Eigentuemer der Zeile (Login-ID). Wird beim Generieren gesetzt und sorgt
+    // dafuer, dass jeder Nutzer nur seine eigenen Testdaten sieht/loescht/pusht.
+    createdBy : String(255);
 }

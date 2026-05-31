@@ -1,6 +1,20 @@
 {
-  "scopes": [],
+  "xsappname": "gisa-master-data-generator",
+  "scopes": [
+    {
+      "name": "$XSAPPNAME.Generator",
+      "description": "Darf Testdaten generieren und an das Backend pushen"
+    }
+  ],
   "attributes": [],
-  "role-templates": [],
+  "role-templates": [
+    {
+      "name": "Generator",
+      "description": "Master Data Generator: Testdaten erzeugen und pushen",
+      "scope-references": [
+        "$XSAPPNAME.Generator"
+      ]
+    }
+  ],
   "authorities-inheritance": false
 }

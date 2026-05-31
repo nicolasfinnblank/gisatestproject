@@ -62,6 +62,6 @@ entity GeneratorData
     neighborhoodName : String(100);
     firstName : String(50);
     lastName : String(50);
-    postCode : Integer;
-    houseNumber : Integer;
+    postCode : String(5);
+    houseNumber : String(3);
 }

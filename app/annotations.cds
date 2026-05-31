@@ -6,19 +6,16 @@ annotate test1Srv.StreetNames with {
 };
 annotate test1Srv.StreetNames with @UI.Identification: [{ Value: streetName }];
 annotate test1Srv.StreetNames with {
-  streetName @title: 'Street Name';
-  streetNumber @title: 'Street Number'
+  streetName @title: 'Street Name'
 };
 
 annotate test1Srv.StreetNames with @UI.LineItem: [
- { $Type: 'UI.DataField', Value: streetName },
- { $Type: 'UI.DataField', Value: streetNumber }
+ { $Type: 'UI.DataField', Value: streetName }
 ];
 
 annotate test1Srv.StreetNames with @UI.FieldGroup #Main: {
   $Type: 'UI.FieldGroupType', Data: [
- { $Type: 'UI.DataField', Value: streetName },
- { $Type: 'UI.DataField', Value: streetNumber }
+ { $Type: 'UI.DataField', Value: streetName }
   ]
 };
 

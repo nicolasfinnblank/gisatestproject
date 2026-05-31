@@ -1,6 +1,15 @@
 const cds = require('@sap/cds');
 const { DELETE } = require('@sap/cds/lib/ql/cds-ql');
 
+// Das Backend verlangt Hausnummern im Format [0-9]{1,4}[a-z]
+// (1-4 Ziffern + ein Kleinbuchstabe). Unsere Pool-Hausnummern sind reine
+// Zahlen -> auf max. 4 Ziffern kuerzen und einen zufaelligen Buchstaben anhaengen.
+function toBackendHouseNumber(raw) {
+    const digits = String(raw ?? '').replace(/\D/g, '').slice(0, 4) || '1';
+    const letter = String.fromCharCode(97 + Math.floor(Math.random() * 26)); // a-z
+    return digits + letter;
+}
+
 module.exports = class test1Srv extends cds.ApplicationService {
     async init() {
 
@@ -94,45 +103,44 @@ module.exports = class test1Srv extends cds.ApplicationService {
         // --- HANDLER: Push to Backend ---
         this.on('pushToBackend', async (req) => {
             try {
-                // Use the safe wipe here as well so teammates don't crash
-                try {
-                    await SELECT.one.from('Mock_Address');
-                    await SELECT.one.from('Mock_BusinessPartner');
-                    await DELETE.from('Mock_Address');
-                    await DELETE.from('Mock_BusinessPartner');
-                } catch (dbErr) {
-                    console.log("⚠️ Mock tables not found; skipping deletion during push.");
-                }
+                // Verbindung zum Backend-Service (lokal gemockt bzw. in Produktion das echte S/4)
+                const backend = await cds.connect.to('BackendAPI_2');
 
-                const localCustomers = await SELECT.from(GeneratorData); 
+                const localCustomers = await SELECT.from(GeneratorData);
                 if (localCustomers.length === 0) return req.error(400, "Local database is empty. Generate data first.");
 
+                let pushed = 0;
                 for (const cust of localCustomers) {
-                    const bpNum = Math.floor(Math.random() * 899999 + 100000);
-                    const bpGuid = cds.utils.uuid(); 
+                    // IDs selbst vergeben, um die Datensaetze zu verknuepfen.
+                    // Alle *Number-Felder vergibt der Server (Core.Computed) -> NICHT mitsenden.
+                    const streetId = cds.utils.uuid();
+                    const cityId   = cds.utils.uuid();
+                    const addrId   = cds.utils.uuid();
 
-                   // 1. Insert the Header
-                    await cds.run(INSERT.into('Mock_BusinessPartner').entries({
-                        ID: bpGuid,
-                        businessPartnerNumber: bpNum,
-                        firstName: cust.firstName,
-                        surName: cust.lastName
-                    }));
+                    // 1. Strasse und Stadt anlegen
+                    await backend.create('Street').entries({ ID: streetId, name: cust.streetName });
+                    await backend.create('City').entries({   ID: cityId,   name: cust.cityName });
 
-                    // 2. Insert the Child
-                    await cds.run(INSERT.into('Mock_Address').entries({
-                        ID: cds.utils.uuid(),
-                        up__ID: bpGuid, 
-                        houseNumber: String(cust.houseNumber),
-                        postalCode: String(cust.postCode),
-                        street: cust.streetName,
-                        city: cust.cityName
-                    }));
-            
-                    console.log(`✅ Pushed BP ${bpNum} with its address.`);
+                    // 2. Adresse anlegen (verweist per ID auf Strasse + Stadt)
+                    await backend.create('Address').entries({
+                        ID: addrId,
+                        street_ID: streetId,
+                        city_ID:   cityId,
+                        houseNumber: toBackendHouseNumber(cust.houseNumber),
+                        postalCode:  cust.postCode
+                    });
+
+                    // 3. BusinessPartner anlegen (verweist per ID auf die Adresse)
+                    await backend.create('BusinessPartner').entries({
+                        firstName:  cust.firstName,
+                        surName:    cust.lastName,
+                        address_ID: addrId
+                    });
+                    pushed++;
                 }
-                
-                return `Successfully pushed ${localCustomers.length} customers.`;
+
+                console.log(`✅ Pushed ${pushed} business partners to backend.`);
+                return `Successfully pushed ${pushed} customers to backend.`;
             } catch (err) {
                 console.error('❌ Push failed:', err);
                 return req.error(500, `Push failed: ${err.message}`);

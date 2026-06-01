@@ -68,6 +68,22 @@
                 "GeneratorData": {
                   "detail": { "route": "GeneratorDataObjectPage" }
                 }
+              },
+              "controlConfiguration": {
+                "@com.sap.vocabularies.UI.v1.LineItem": {
+                  "actions": {
+                    "generate": {
+                      "press": "gisamdg.generator.ext.GeneratorActions.onGenerate",
+                      "text": "Generieren",
+                      "enabled": true
+                    },
+                    "push": {
+                      "press": "gisamdg.generator.ext.GeneratorActions.onPush",
+                      "text": "An Backend pushen",
+                      "enabled": true
+                    }
+                  }
+                }
               }
             }
           }

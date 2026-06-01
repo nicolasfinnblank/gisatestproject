@@ -1,5 +1,4 @@
 const cds = require('@sap/cds');
-const { DELETE } = require('@sap/cds/lib/ql/cds-ql');
 
 // Das Backend verlangt Hausnummern im Format [0-9]{1,4}[a-z]
 // (1-4 Ziffern + ein Kleinbuchstabe). Unsere Pool-Hausnummern sind reine
@@ -13,15 +12,20 @@ function toBackendHouseNumber(raw) {
 module.exports = class GeneratorService extends cds.ApplicationService {
     async init() {
 
-        try {
-            // Check if the core tables are already deployed
-            await cds.run(SELECT.one.from('gisa.mdg.GeneratorData'));
-        } catch (err) {
-            if (err.message.includes('no such table')) {
-                console.log("🛠️  Missing tables detected. Auto-deploying schema to db.sqlite...");
-                const model = await cds.load('*'); 
-                await cds.deploy(model).to('sqlite:db.sqlite');
-                console.log("✅ Auto-deployment successful. Environment is ready.");
+        // Lokaler Komfort: Startet die App auf einer frischen SQLite-Datei
+        // (z.B. via 'npm start', das nicht automatisch deployt), werden die
+        // Tabellen einmalig angelegt. Greift nur auf SQLite – in Produktion
+        // (HANA) wird hier nichts deployt.
+        if (cds.db?.kind !== 'hana') {
+            try {
+                await cds.run(SELECT.one.from('gisa.mdg.GeneratorData'));
+            } catch (err) {
+                if (err.message.includes('no such table')) {
+                    const url = cds.env.requires.db?.credentials?.url || 'db.sqlite';
+                    console.log(`🛠️  Tabellen fehlen – deploye Schema lokal nach ${url} …`);
+                    await cds.deploy(await cds.load('*')).to('sqlite:' + url);
+                    console.log("✅ Lokales Deployment fertig.");
+                }
             }
         }
 

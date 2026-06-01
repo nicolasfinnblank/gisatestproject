@@ -1,4 +1,4 @@
-namespace Test1;
+namespace gisa.mdg;
 
 using { cuid } from '@sap/cds/common';
 

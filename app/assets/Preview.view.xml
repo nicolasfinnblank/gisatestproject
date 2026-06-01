@@ -16,7 +16,7 @@
     <l:BlockLayout>
         <l:BlockLayoutRow>
             <l:BlockLayoutCell
-                title="Test1"
+                title="GISA Master Data Generator"
                 titleAlignment="Left"
                 class="customCellImageBackground">
                 <VBox>

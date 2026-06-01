@@ -1,8 +1,8 @@
-using { Test1 as my } from '../db/schema.cds';
+using { gisa.mdg as my } from '../db/schema.cds';
 
-@path : '/service/test1'
+@path : '/service/generator'
 @requires : 'Generator'
-service test1Srv {
+service GeneratorService {
     
     entity StreetNames as projection on my.StreetNames;
     entity Cities as projection on my.Cities;

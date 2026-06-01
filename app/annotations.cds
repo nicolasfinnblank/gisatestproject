@@ -1,137 +1,137 @@
-using { test1Srv } from '../srv/service.cds';
+using { GeneratorService } from '../srv/service.cds';
 
-annotate test1Srv.StreetNames with @UI.HeaderInfo: { TypeName: 'Street Name', TypeNamePlural: 'Street Names', Title: { Value: streetName } };
-annotate test1Srv.StreetNames with {
+annotate GeneratorService.StreetNames with @UI.HeaderInfo: { TypeName: 'Street Name', TypeNamePlural: 'Street Names', Title: { Value: streetName } };
+annotate GeneratorService.StreetNames with {
   ID @UI.Hidden @Common.Text: { $value: streetName, ![@UI.TextArrangement]: #TextOnly }
 };
-annotate test1Srv.StreetNames with @UI.Identification: [{ Value: streetName }];
-annotate test1Srv.StreetNames with {
+annotate GeneratorService.StreetNames with @UI.Identification: [{ Value: streetName }];
+annotate GeneratorService.StreetNames with {
   streetName @title: 'Street Name'
 };
 
-annotate test1Srv.StreetNames with @UI.LineItem: [
+annotate GeneratorService.StreetNames with @UI.LineItem: [
  { $Type: 'UI.DataField', Value: streetName }
 ];
 
-annotate test1Srv.StreetNames with @UI.FieldGroup #Main: {
+annotate GeneratorService.StreetNames with @UI.FieldGroup #Main: {
   $Type: 'UI.FieldGroupType', Data: [
  { $Type: 'UI.DataField', Value: streetName }
   ]
 };
 
-annotate test1Srv.StreetNames with @UI.Facets: [
+annotate GeneratorService.StreetNames with @UI.Facets: [
   { $Type: 'UI.ReferenceFacet', ID: 'Main', Label: 'General Information', Target: '@UI.FieldGroup#Main' }
 ];
 
-annotate test1Srv.StreetNames with @UI.SelectionFields: [
+annotate GeneratorService.StreetNames with @UI.SelectionFields: [
   streetName
 ];
 
-annotate test1Srv.Cities with @UI.HeaderInfo: { TypeName: 'City', TypeNamePlural: 'Cities', Title: { Value: cityName } };
-annotate test1Srv.Cities with {
+annotate GeneratorService.Cities with @UI.HeaderInfo: { TypeName: 'City', TypeNamePlural: 'Cities', Title: { Value: cityName } };
+annotate GeneratorService.Cities with {
   ID @UI.Hidden @Common.Text: { $value: cityName, ![@UI.TextArrangement]: #TextOnly }
 };
-annotate test1Srv.Cities with @UI.Identification: [{ Value: cityName }];
-annotate test1Srv.Cities with {
+annotate GeneratorService.Cities with @UI.Identification: [{ Value: cityName }];
+annotate GeneratorService.Cities with {
   cityName @title: 'City Name'
 };
 
-annotate test1Srv.Cities with @UI.LineItem: [
+annotate GeneratorService.Cities with @UI.LineItem: [
  { $Type: 'UI.DataField', Value: cityName }
 ];
 
-annotate test1Srv.Cities with @UI.FieldGroup #Main: {
+annotate GeneratorService.Cities with @UI.FieldGroup #Main: {
   $Type: 'UI.FieldGroupType', Data: [
  { $Type: 'UI.DataField', Value: cityName }
   ]
 };
 
-annotate test1Srv.Cities with @UI.Facets: [
+annotate GeneratorService.Cities with @UI.Facets: [
   { $Type: 'UI.ReferenceFacet', ID: 'Main', Label: 'General Information', Target: '@UI.FieldGroup#Main' }
 ];
 
-annotate test1Srv.Cities with @UI.SelectionFields: [
+annotate GeneratorService.Cities with @UI.SelectionFields: [
   cityName
 ];
 
-annotate test1Srv.Neighborhoods with @UI.HeaderInfo: { TypeName: 'Neighborhood', TypeNamePlural: 'Neighborhoods', Title: { Value: neighborhoodName } };
-annotate test1Srv.Neighborhoods with {
+annotate GeneratorService.Neighborhoods with @UI.HeaderInfo: { TypeName: 'Neighborhood', TypeNamePlural: 'Neighborhoods', Title: { Value: neighborhoodName } };
+annotate GeneratorService.Neighborhoods with {
   ID @UI.Hidden @Common.Text: { $value: neighborhoodName, ![@UI.TextArrangement]: #TextOnly }
 };
-annotate test1Srv.Neighborhoods with @UI.Identification: [{ Value: neighborhoodName }];
-annotate test1Srv.Neighborhoods with {
+annotate GeneratorService.Neighborhoods with @UI.Identification: [{ Value: neighborhoodName }];
+annotate GeneratorService.Neighborhoods with {
   neighborhoodName @title: 'Neighborhood Name'
 };
 
-annotate test1Srv.Neighborhoods with @UI.LineItem: [
+annotate GeneratorService.Neighborhoods with @UI.LineItem: [
  { $Type: 'UI.DataField', Value: neighborhoodName }
 ];
 
-annotate test1Srv.Neighborhoods with @UI.FieldGroup #Main: {
+annotate GeneratorService.Neighborhoods with @UI.FieldGroup #Main: {
   $Type: 'UI.FieldGroupType', Data: [
  { $Type: 'UI.DataField', Value: neighborhoodName }
   ]
 };
 
-annotate test1Srv.Neighborhoods with @UI.Facets: [
+annotate GeneratorService.Neighborhoods with @UI.Facets: [
   { $Type: 'UI.ReferenceFacet', ID: 'Main', Label: 'General Information', Target: '@UI.FieldGroup#Main' }
 ];
 
-annotate test1Srv.Neighborhoods with @UI.SelectionFields: [
+annotate GeneratorService.Neighborhoods with @UI.SelectionFields: [
   neighborhoodName
 ];
 
-annotate test1Srv.FirstNames with @UI.HeaderInfo: { TypeName: 'First Name', TypeNamePlural: 'First Names', Title: { Value: firstName } };
-annotate test1Srv.FirstNames with {
+annotate GeneratorService.FirstNames with @UI.HeaderInfo: { TypeName: 'First Name', TypeNamePlural: 'First Names', Title: { Value: firstName } };
+annotate GeneratorService.FirstNames with {
   ID @UI.Hidden @Common.Text: { $value: firstName, ![@UI.TextArrangement]: #TextOnly }
 };
-annotate test1Srv.FirstNames with @UI.Identification: [{ Value: firstName }];
-annotate test1Srv.FirstNames with {
+annotate GeneratorService.FirstNames with @UI.Identification: [{ Value: firstName }];
+annotate GeneratorService.FirstNames with {
   firstName @title: 'First Name'
 };
 
-annotate test1Srv.FirstNames with @UI.LineItem: [
+annotate GeneratorService.FirstNames with @UI.LineItem: [
  { $Type: 'UI.DataField', Value: firstName }
 ];
 
-annotate test1Srv.FirstNames with @UI.FieldGroup #Main: {
+annotate GeneratorService.FirstNames with @UI.FieldGroup #Main: {
   $Type: 'UI.FieldGroupType', Data: [
  { $Type: 'UI.DataField', Value: firstName }
   ]
 };
 
-annotate test1Srv.FirstNames with @UI.Facets: [
+annotate GeneratorService.FirstNames with @UI.Facets: [
   { $Type: 'UI.ReferenceFacet', ID: 'Main', Label: 'General Information', Target: '@UI.FieldGroup#Main' }
 ];
 
-annotate test1Srv.FirstNames with @UI.SelectionFields: [
+annotate GeneratorService.FirstNames with @UI.SelectionFields: [
   firstName
 ];
 
-annotate test1Srv.LastNames with @UI.HeaderInfo: { TypeName: 'Last Name', TypeNamePlural: 'Last Names', Title: { Value: lastName } };
-annotate test1Srv.LastNames with {
+annotate GeneratorService.LastNames with @UI.HeaderInfo: { TypeName: 'Last Name', TypeNamePlural: 'Last Names', Title: { Value: lastName } };
+annotate GeneratorService.LastNames with {
   ID @UI.Hidden @Common.Text: { $value: lastName, ![@UI.TextArrangement]: #TextOnly }
 };
-annotate test1Srv.LastNames with @UI.Identification: [{ Value: lastName }];
-annotate test1Srv.LastNames with {
+annotate GeneratorService.LastNames with @UI.Identification: [{ Value: lastName }];
+annotate GeneratorService.LastNames with {
   lastName @title: 'Last Name'
 };
 
-annotate test1Srv.LastNames with @UI.LineItem: [
+annotate GeneratorService.LastNames with @UI.LineItem: [
  { $Type: 'UI.DataField', Value: lastName }
 ];
 
-annotate test1Srv.LastNames with @UI.FieldGroup #Main: {
+annotate GeneratorService.LastNames with @UI.FieldGroup #Main: {
   $Type: 'UI.FieldGroupType', Data: [
  { $Type: 'UI.DataField', Value: lastName }
   ]
 };
 
-annotate test1Srv.LastNames with @UI.Facets: [
+annotate GeneratorService.LastNames with @UI.Facets: [
   { $Type: 'UI.ReferenceFacet', ID: 'Main', Label: 'General Information', Target: '@UI.FieldGroup#Main' }
 ];
 
-annotate test1Srv.LastNames with @UI.SelectionFields: [
+annotate GeneratorService.LastNames with @UI.SelectionFields: [
   lastName
 ];
 

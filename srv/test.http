@@ -1,5 +1,5 @@
 
-POST http://localhost:4004/service/test1/generateTestCustomers
+POST http://localhost:4004/service/generator/generateTestCustomers
 Content-Type: application/json
 
 {
@@ -7,7 +7,7 @@ Content-Type: application/json
 }
 ###
 
-POST http://localhost:4004/service/test1/pushToBackend
+POST http://localhost:4004/service/generator/pushToBackend
 Content-Type: application/json
 
 {}

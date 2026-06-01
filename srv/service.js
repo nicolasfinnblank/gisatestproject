@@ -10,12 +10,12 @@ function toBackendHouseNumber(raw) {
     return digits + letter;
 }
 
-module.exports = class test1Srv extends cds.ApplicationService {
+module.exports = class GeneratorService extends cds.ApplicationService {
     async init() {
 
         try {
             // Check if the core tables are already deployed
-            await cds.run(SELECT.one.from('Test1.GeneratorData'));
+            await cds.run(SELECT.one.from('gisa.mdg.GeneratorData'));
         } catch (err) {
             if (err.message.includes('no such table')) {
                 console.log("🛠️  Missing tables detected. Auto-deploying schema to db.sqlite...");

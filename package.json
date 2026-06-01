@@ -1,5 +1,5 @@
 {
-  "name": "Test1",
+  "name": "gisa-master-data-generator",
   "version": "1.0.0",
   "dependencies": {
     "@cap-js/hana": "^2",

@@ -19,7 +19,7 @@ const asAlice   = { auth: { username: 'alice',   password: 'alice'   } };
 const asBob     = { auth: { username: 'bob',     password: 'bob'     } };
 const asMallory = { auth: { username: 'mallory', password: 'mallory' } };
 
-const SRV = '/service/test1';
+const SRV = '/service/generator';
 const BACKEND = '/odata/v4/backend-api-2';
 
 // Hilfsfunktion: Status-Code einer erwartet fehlschlagenden Anfrage pruefen

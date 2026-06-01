@@ -1,0 +1,105 @@
+{
+  "_version": "1.65.0",
+  "sap.app": {
+    "id": "gisamdg.generator",
+    "type": "application",
+    "i18n": "i18n/i18n.properties",
+    "title": "{{appTitle}}",
+    "description": "{{appDescription}}",
+    "applicationVersion": { "version": "1.0.0" },
+    "dataSources": {
+      "mainService": {
+        "uri": "/service/generator/",
+        "type": "OData",
+        "settings": {
+          "odataVersion": "4.0"
+        }
+      }
+    }
+  },
+  "sap.ui": {
+    "technology": "UI5",
+    "deviceTypes": { "desktop": true, "tablet": true, "phone": true }
+  },
+  "sap.ui5": {
+    "dependencies": {
+      "minUI5Version": "1.120.0",
+      "libs": {
+        "sap.fe.templates": {}
+      }
+    },
+    "models": {
+      "i18n": {
+        "type": "sap.ui.model.resource.ResourceModel",
+        "settings": { "bundleName": "gisamdg.generator.i18n.i18n" }
+      },
+      "": {
+        "dataSource": "mainService",
+        "settings": {
+          "synchronizationMode": "None",
+          "operationMode": "Server",
+          "autoExpandSelect": true,
+          "earlyRequests": true
+        }
+      }
+    },
+    "routing": {
+      "routes": [
+        {
+          "pattern": ":?query:",
+          "name": "GeneratorDataList",
+          "target": "GeneratorDataList"
+        },
+        {
+          "pattern": "GeneratorData({key}):?query:",
+          "name": "GeneratorDataObjectPage",
+          "target": "GeneratorDataObjectPage"
+        }
+      ],
+      "targets": {
+        "GeneratorDataList": {
+          "type": "Component",
+          "id": "GeneratorDataList",
+          "name": "sap.fe.templates.ListReport",
+          "options": {
+            "settings": {
+              "entitySet": "GeneratorData",
+              "variantManagement": "Page",
+              "navigation": {
+                "GeneratorData": {
+                  "detail": { "route": "GeneratorDataObjectPage" }
+                }
+              },
+              "controlConfiguration": {
+                "@com.sap.vocabularies.UI.v1.LineItem": {
+                  "actions": {
+                    "generate": {
+                      "press": "gisamdg.generator.ext.GeneratorActions.onGenerate",
+                      "text": "{{actionGenerate}}",
+                      "enabled": true
+                    },
+                    "push": {
+                      "press": "gisamdg.generator.ext.GeneratorActions.onPush",
+                      "text": "{{actionPush}}",
+                      "enabled": true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "GeneratorDataObjectPage": {
+          "type": "Component",
+          "id": "GeneratorDataObjectPage",
+          "name": "sap.fe.templates.ObjectPage",
+          "options": {
+            "settings": {
+              "entitySet": "GeneratorData"
+            }
+          }
+        }
+      }
+    }
+  }
+}

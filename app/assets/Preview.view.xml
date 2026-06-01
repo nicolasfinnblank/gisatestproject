@@ -32,13 +32,13 @@
                     content='&lt;hr class=&quot;webAppSeparator&quot;&gt;'>
                 </core:HTML>
                 
-                <!-- Direktverlinkung zur eigenen Generator Freestyle-UI -->
+                <!-- Direktverlinkung zur Fiori-Elements-App des Generators -->
                 <VBox class="sapUiSmallMarginTopBottom">
-                    <Link text="GISA Master Data Generator" 
-                          href="generator.html" 
-                          target="_self" 
+                    <Link text="GISA Master Data Generator"
+                          href="generator/webapp/index.html"
+                          target="_self"
                           design="Bold" />
-                    <Text text="Freestyle-UI zur Erzeugung von Test-Stammdaten (Geschäftspartner) und automatischem Push in das simulierte S/4HANA-Backend." 
+                    <Text text="Fiori-Elements-UI zur Erzeugung von Test-Stammdaten (Geschäftspartner) und automatischem Push in das simulierte S/4HANA-Backend."
                           class="sapUiTinyMarginTop" />
                 </VBox>
 

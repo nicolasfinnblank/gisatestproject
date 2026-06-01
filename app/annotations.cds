@@ -135,3 +135,55 @@ annotate GeneratorService.LastNames with @UI.SelectionFields: [
   lastName
 ];
 
+//
+// --- Generierte Stammdaten (Ergebnis-Liste) ---
+//
+annotate GeneratorService.GeneratorData with @UI.HeaderInfo: {
+  TypeName: 'Generierte Entität',
+  TypeNamePlural: 'Generierte Stammdaten',
+  Title: { Value: lastName },
+  Description: { Value: firstName }
+};
+
+annotate GeneratorService.GeneratorData with {
+  concatID         @UI.Hidden;
+  createdBy        @UI.Hidden  @title: 'Erstellt von';
+  firstName        @title: 'Vorname';
+  lastName         @title: 'Nachname';
+  streetName       @title: 'Straße';
+  houseNumber      @title: 'Hausnummer';
+  postCode         @title: 'PLZ';
+  cityName         @title: 'Stadt';
+  neighborhoodName @title: 'Stadtteil';
+};
+
+annotate GeneratorService.GeneratorData with @UI.LineItem: [
+  { $Type: 'UI.DataField', Value: firstName },
+  { $Type: 'UI.DataField', Value: lastName },
+  { $Type: 'UI.DataField', Value: streetName },
+  { $Type: 'UI.DataField', Value: houseNumber },
+  { $Type: 'UI.DataField', Value: postCode },
+  { $Type: 'UI.DataField', Value: cityName },
+  { $Type: 'UI.DataField', Value: neighborhoodName }
+];
+
+annotate GeneratorService.GeneratorData with @UI.SelectionFields: [
+  lastName, cityName, postCode
+];
+
+annotate GeneratorService.GeneratorData with @UI.FieldGroup #Details: {
+  $Type: 'UI.FieldGroupType', Data: [
+    { $Type: 'UI.DataField', Value: firstName },
+    { $Type: 'UI.DataField', Value: lastName },
+    { $Type: 'UI.DataField', Value: streetName },
+    { $Type: 'UI.DataField', Value: houseNumber },
+    { $Type: 'UI.DataField', Value: postCode },
+    { $Type: 'UI.DataField', Value: cityName },
+    { $Type: 'UI.DataField', Value: neighborhoodName }
+  ]
+};
+
+annotate GeneratorService.GeneratorData with @UI.Facets: [
+  { $Type: 'UI.ReferenceFacet', ID: 'Details', Label: 'Details', Target: '@UI.FieldGroup#Details' }
+];
+

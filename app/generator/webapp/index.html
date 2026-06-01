@@ -4,21 +4,30 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GISA Master Data Generator</title>
-  <script id="sap-ui-bootstrap"
+  <style>
+    html, body, #content { height: 100%; margin: 0; padding: 0; }
+  </style>
+  <script
+    id="sap-ui-bootstrap"
     src="https://ui5.sap.com/1.136.9/resources/sap-ui-core.js"
     data-sap-ui-theme="sap_horizon"
     data-sap-ui-resource-roots='{"gisamdg.generator": "./"}'
-    data-sap-ui-oninit="module:sap/ui/core/ComponentSupport"
     data-sap-ui-compat-version="edge"
     data-sap-ui-async="true">
   </script>
+  <script>
+    sap.ui.getCore().attachInit(function () {
+      sap.ui.require(["sap/ui/core/ComponentContainer"], function (ComponentContainer) {
+        new ComponentContainer({
+          name: "gisamdg.generator",
+          manifest: true,
+          async: true,
+          height: "100%",
+          width: "100%"
+        }).placeAt("content");
+      });
+    });
+  </script>
 </head>
-<body class="sapUiBody">
-  <div data-sap-ui-component
-       data-name="gisamdg.generator"
-       data-id="container"
-       data-settings='{"id":"gisamdg.generator"}'
-       data-height="100%">
-  </div>
-</body>
+<body class="sapUiBody" id="content"></body>
 </html>

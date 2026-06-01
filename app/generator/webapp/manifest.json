@@ -31,12 +31,11 @@
     "models": {
       "i18n": {
         "type": "sap.ui.model.resource.ResourceModel",
-        "settings": { "bundleName": "gisamdg.generator.i18n.i18n" }
+        "settings": { "bundleName": "gisamdg.generator.i18n.i18n", "async": true }
       },
       "": {
         "dataSource": "mainService",
         "settings": {
-          "synchronizationMode": "None",
           "operationMode": "Server",
           "autoExpandSelect": true,
           "earlyRequests": true
@@ -64,26 +63,10 @@
           "options": {
             "settings": {
               "entitySet": "GeneratorData",
-              "variantManagement": "Page",
+              "variantManagement": "None",
               "navigation": {
                 "GeneratorData": {
                   "detail": { "route": "GeneratorDataObjectPage" }
-                }
-              },
-              "controlConfiguration": {
-                "@com.sap.vocabularies.UI.v1.LineItem": {
-                  "actions": {
-                    "generate": {
-                      "press": "gisamdg.generator.ext.GeneratorActions.onGenerate",
-                      "text": "{{actionGenerate}}",
-                      "enabled": true
-                    },
-                    "push": {
-                      "press": "gisamdg.generator.ext.GeneratorActions.onPush",
-                      "text": "{{actionPush}}",
-                      "enabled": true
-                    }
-                  }
                 }
               }
             }

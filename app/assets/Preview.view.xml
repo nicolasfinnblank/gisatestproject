@@ -16,7 +16,7 @@
     <l:BlockLayout>
         <l:BlockLayoutRow>
             <l:BlockLayoutCell
-                title="GISA Master Data Generator"
+                title="gisa-master-data-generator"
                 titleAlignment="Left"
                 class="customCellImageBackground">
                 <VBox>
@@ -27,13 +27,21 @@
         </l:BlockLayoutRow>
         <l:BlockLayoutRow class="blockLayoutContentRow">
             <l:BlockLayoutCell id="webApplications" width='2'>
-                <Title titleStyle="H3" text="Web Applications (0)"/>
+                <Title titleStyle="H3" text="Web Applications (1)"/>
                 <core:HTML 
                     content='&lt;hr class=&quot;webAppSeparator&quot;&gt;'>
                 </core:HTML>
-                <core:HTML
-                    content='&lt;p&gt;No web applications are included.&lt;/p&gt;'>
-                </core:HTML>
+                
+                <!-- Direktverlinkung zur eigenen Generator Freestyle-UI -->
+                <VBox class="sapUiSmallMarginTopBottom">
+                    <Link text="GISA Master Data Generator" 
+                          href="generator.html" 
+                          target="_self" 
+                          design="Bold" />
+                    <Text text="Freestyle-UI zur Erzeugung von Test-Stammdaten (Geschäftspartner) und automatischem Push in das simulierte S/4HANA-Backend." 
+                          class="sapUiTinyMarginTop" />
+                </VBox>
+
                 <core:HTML
                     content='&lt;iframe class=&quot;launchpad sectionContentMargin&quot; src=&quot;./launchpadPage.html&quot; frameBorder=0 &gt;&lt;/iframe&gt;'>
                 </core:HTML>

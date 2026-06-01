@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GISA Master Data Generator</title>
+  <script id="sap-ui-bootstrap"
+    src="https://ui5.sap.com/1.136.9/resources/sap-ui-core.js"
+    data-sap-ui-theme="sap_horizon"
+    data-sap-ui-libs="sap.m"
+    data-sap-ui-compatVersion="edge"
+    data-sap-ui-async="true">
+  </script>
+  <script>
+    // Basis-Pfad des OData-Service (relativ -> http://host/service/generator)
+    const BASE = "service/generator";
+
+    sap.ui.getCore().attachInit(function () {
+      sap.ui.require([
+        "sap/m/App", "sap/m/Page", "sap/m/OverflowToolbar", "sap/m/Label",
+        "sap/m/StepInput", "sap/m/Button", "sap/m/ToolbarSpacer",
+        "sap/m/Table", "sap/m/Column", "sap/m/ColumnListItem", "sap/m/Text",
+        "sap/ui/model/json/JSONModel", "sap/m/MessageToast", "sap/m/Title"
+      ], function (App, Page, OverflowToolbar, Label, StepInput, Button, ToolbarSpacer,
+                   Table, Column, ColumnListItem, Text, JSONModel, MessageToast, Title) {
+
+        const oModel = new JSONModel({ rows: [], count: 0 });
+
+        // --- generierte Daten laden ---
+        function loadData() {
+          fetch(BASE + "/GeneratorData?$select=firstName,lastName,streetName,houseNumber,postCode,cityName,neighborhoodName&$orderby=lastName",
+                { headers: { Accept: "application/json" } })
+            .then(r => r.json())
+            .then(d => {
+              oModel.setProperty("/rows", d.value || []);
+              oModel.setProperty("/count", (d.value || []).length);
+            })
+            .catch(e => MessageToast.show("Laden fehlgeschlagen: " + e.message));
+        }
+
+        // --- OData-Action aufrufen ---
+        function callAction(name, body, okMsg, busyBtn) {
+          busyBtn.setBusy(true);
+          return fetch(BASE + "/" + name, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Accept: "application/json" },
+            body: JSON.stringify(body || {})
+          }).then(async r => {
+            const t = await r.json().catch(() => ({}));
+            if (!r.ok) throw new Error((t.error && t.error.message) || ("HTTP " + r.status));
+            MessageToast.show(okMsg + (t.value ? (": " + t.value) : ""));
+          }).finally(() => busyBtn.setBusy(false));
+        }
+
+        const anzahl = new StepInput({ value: 5, min: 1, max: 1000, width: "9rem" });
+
+        const btnGenerate = new Button({
+          text: "Generieren", type: "Emphasized", icon: "sap-icon://add",
+          press: function () {
+            callAction("generateTestCustomers", { anzahl: anzahl.getValue() }, "Generiert", btnGenerate)
+              .then(loadData)
+              .catch(e => MessageToast.show("Fehler: " + e.message));
+          }
+        });
+
+        const btnPush = new Button({
+          text: "An Backend pushen", icon: "sap-icon://upload",
+          press: function () {
+            callAction("pushToBackend", {}, "An Backend gepusht", btnPush)
+              .catch(e => MessageToast.show("Fehler: " + e.message));
+          }
+        });
+
+        const btnRefresh = new Button({ icon: "sap-icon://refresh", tooltip: "Neu laden", press: loadData });
+
+        const oTable = new Table({
+          headerText: "Generierte Stammdaten",
+          growing: true, growingThreshold: 50,
+          columns: [
+            new Column({ header: new Text({ text: "Vorname" }) }),
+            new Column({ header: new Text({ text: "Nachname" }) }),
+            new Column({ header: new Text({ text: "Straße" }) }),
+            new Column({ header: new Text({ text: "Hausnr." }) }),
+            new Column({ header: new Text({ text: "PLZ" }) }),
+            new Column({ header: new Text({ text: "Stadt" }) }),
+            new Column({ header: new Text({ text: "Stadtteil" }) })
+          ]
+        });
+        oTable.setModel(oModel);
+        oTable.bindItems({
+          path: "/rows",
+          template: new ColumnListItem({
+            cells: [
+              new Text({ text: "{firstName}" }), new Text({ text: "{lastName}" }),
+              new Text({ text: "{streetName}" }), new Text({ text: "{houseNumber}" }),
+              new Text({ text: "{postCode}" }), new Text({ text: "{cityName}" }),
+              new Text({ text: "{neighborhoodName}" })
+            ]
+          })
+        });
+
+        const oPage = new Page({
+          title: "GISA Master Data Generator",
+          content: [
+            new OverflowToolbar({
+              content: [
+                new Label({ text: "Anzahl:" }), anzahl, btnGenerate,
+                new ToolbarSpacer(), btnPush, btnRefresh
+              ]
+            }),
+            oTable
+          ]
+        });
+
+        new App({ pages: [oPage] }).placeAt("content");
+        loadData();
+      });
+    });
+  </script>
+</head>
+<body class="sapUiBody">
+  <div id="content"></div>
+</body>
+</html>

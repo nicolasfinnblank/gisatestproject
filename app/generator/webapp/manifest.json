@@ -87,6 +87,11 @@
                       "text": "Daten kopieren",
                       "enabled": true
                     },
+                    "deleteInSystem": {
+                      "press": "gisamdg.generator.ext.GeneratorActions.onDelete",
+                      "text": "Im System löschen",
+                      "enabled": true
+                    },
                     "showTracking": {
                       "press": "gisamdg.generator.ext.GeneratorActions.onShowTracking",
                       "text": "Tracking anzeigen",

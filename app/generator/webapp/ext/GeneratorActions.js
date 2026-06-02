@@ -143,6 +143,51 @@ sap.ui.define([
       }).catch(function (e) { MessageToast.show("Fehler: " + e.message); });
     },
 
+    // Im gewaehlten System angelegte Objekte wieder loeschen (Dialog).
+    onDelete: function () {
+      loadSystems().then(function (aSystems) {
+        if (!aSystems.length) {
+          MessageToast.show("Keine Zielsysteme konfiguriert.");
+          return;
+        }
+
+        const oSelect = new Select({ width: "100%" });
+        aSystems.forEach(function (s) {
+          oSelect.addItem(new Item({
+            key: s.ID,
+            text: s.name + (s.description ? " – " + s.description : "") + (s.isDefault ? " (Standard)" : "")
+          }));
+        });
+        const oDefault = aSystems.find(function (s) { return s.isDefault; });
+        if (oDefault) { oSelect.setSelectedKey(oDefault.ID); }
+
+        const oDialog = new Dialog({
+          title: "Im SAP-System löschen",
+          state: "Warning",
+          content: new VBox({
+            items: [
+              new Label({ text: "Löscht die von dir in diesem System angelegten Objekte unwiderruflich." }),
+              new Label({ text: "System:", labelFor: oSelect }), oSelect
+            ]
+          }).addStyleClass("sapUiContentPadding"),
+          beginButton: new Button({
+            text: "Löschen",
+            type: "Reject",
+            press: function () {
+              const sId = oSelect.getSelectedKey();
+              oDialog.close();
+              callAction("deleteFromBackend", { system: sId })
+                .then(function (msg) { MessageToast.show(msg || "Gelöscht"); })
+                .catch(function (e) { MessageToast.show("Fehler: " + e.message); });
+            }
+          }),
+          endButton: new Button({ text: "Abbrechen", press: function () { oDialog.close(); } }),
+          afterClose: function () { oDialog.destroy(); }
+        });
+        oDialog.open();
+      }).catch(function (e) { MessageToast.show("Fehler: " + e.message); });
+    },
+
     // Zur Tracking-Liste (eigenstaendige FE-App unter anderer URL).
     onShowTracking: function () {
       window.location.href = "/tracking/webapp/index.html";

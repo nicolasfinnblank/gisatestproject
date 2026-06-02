@@ -35,4 +35,7 @@ service GeneratorService {
     // Kopiert die vom Nutzer im Quellsystem angelegten Business Partner
     // (inkl. Adresse) in das Zielsystem. sourceSystem/targetSystem = Systems.ID.
     action copyData(sourceSystem : String, targetSystem : String) returns String;
+    // Loescht die vom Nutzer im angegebenen System angelegten Objekte wieder
+    // aus dem Backend (und die zugehoerigen Tracking-Eintraege). system = Systems.ID.
+    action deleteFromBackend(system : String) returns String;
 }

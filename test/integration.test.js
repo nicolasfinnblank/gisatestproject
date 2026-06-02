@@ -8,6 +8,7 @@ cds.env.requires.auth = {
     alice:   { password: 'alice',   roles: ['Generator'] },
     bob:     { password: 'bob',     roles: ['Generator'] },
     carol:   { password: 'carol',   roles: ['Generator'] },
+    dave:    { password: 'dave',    roles: ['Generator'] },
     mallory: { password: 'mallory', roles: [] }
   }
 };
@@ -19,6 +20,7 @@ const { GET, POST, expect } = cds.test('serve', 'all', '--with-mocks', '--in-mem
 const asAlice   = { auth: { username: 'alice',   password: 'alice'   } };
 const asBob     = { auth: { username: 'bob',     password: 'bob'     } };
 const asCarol   = { auth: { username: 'carol',   password: 'carol'   } };
+const asDave    = { auth: { username: 'dave',    password: 'dave'    } };
 const asMallory = { auth: { username: 'mallory', password: 'mallory' } };
 
 const SRV = '/service/generator';
@@ -196,6 +198,37 @@ describe('GISA Master Data Generator', () => {
       )).data.value;
       expect(tracked.length).to.equal(3);
       expect([...new Set(tracked.map(t => t.createdBy))]).to.eql(['carol']);
+    });
+  });
+
+  describe('Löschen im System', () => {
+    const BACKEND2 = '/odata/v4/backend-api-2';
+
+    it('löscht die eigenen Objekte wieder aus dem System und räumt das Tracking', async () => {
+      await POST(`${SRV}/generateTestCustomers`, { anzahl: 3 }, asDave);
+      await POST(`${SRV}/pushToBackend`, {}, asDave);  // Default S4D
+
+      const before = (await GET(`${SRV}/CreatedObjects`, asDave)).data.value;
+      expect(before.length).to.equal(12);  // 3 x 4 Objekte
+      const bpNumbers = before.filter(t => t.objectType === 'BusinessPartner').map(t => t.objectKey);
+      expect(bpNumbers.length).to.equal(3);
+
+      const { data } = await POST(`${SRV}/deleteFromBackend`, { system: 's4d' }, asDave);
+      expect(data.value).to.match(/Deleted 12 objects from S4D/);
+
+      // Tracking von dave ist leer.
+      const after = (await GET(`${SRV}/CreatedObjects`, asDave)).data.value;
+      expect(after.length).to.equal(0);
+
+      // Die Business Partner sind im Backend (S4D = backend-2) tatsaechlich weg.
+      const filter = bpNumbers.map(n => `businessPartnerNumber eq ${n}`).join(' or ');
+      const remaining = (await GET(`${BACKEND2}/BusinessPartner?$filter=${encodeURIComponent(filter)}`, asDave)).data.value;
+      expect(remaining.length).to.equal(0);
+    });
+
+    it('lehnt Löschen ab, wenn der Nutzer im System nichts angelegt hat (400)', async () => {
+      // dave hat nach dem Loeschen oben nichts mehr im System.
+      await expectStatus(POST(`${SRV}/deleteFromBackend`, { system: 's4d' }, asDave), 400);
     });
   });
 

@@ -266,6 +266,67 @@ module.exports = class GeneratorService extends cds.ApplicationService {
             }
         });
 
+        // --- HANDLER: Delete from Backend ---
+        // Welches *Number-Feld traegt den Backend-Schluessel je Objekttyp.
+        const NUMBER_FIELD = {
+            BusinessPartner: 'businessPartnerNumber',
+            Address:         'addressNumber',
+            Street:          'streetNumber',
+            City:            'cityNumber'
+        };
+        // Loeschreihenfolge: abhaengige Objekte zuerst (BP -> Address -> Street/City).
+        const DELETE_ORDER = ['BusinessPartner', 'Address', 'Street', 'City'];
+
+        this.on('deleteFromBackend', async (req) => {
+            try {
+                const sys = req.data.system
+                    ? await SELECT.one.from(Systems).where({ ID: req.data.system })
+                    : await SELECT.one.from(Systems).where({ isDefault: true });
+                if (!sys) {
+                    return req.error(400, req.data.system
+                        ? `Unbekanntes System '${req.data.system}'.`
+                        : 'Kein Default-System konfiguriert.');
+                }
+
+                const owner = req.user.id || 'anonymous';
+                const tracked = await SELECT.from(CreatedObjects).where({ system: sys.name, createdBy: owner });
+                if (tracked.length === 0) {
+                    return req.error(400, `Im System ${sys.name} hast du nichts angelegt.`);
+                }
+
+                const backend = await cds.connect.to(sys.serviceName);
+
+                // Je Objekttyp: anhand der getrackten *Number die Backend-IDs holen
+                // und per Key loeschen (OData-DELETE ist key-basiert).
+                let deleted = 0;
+                for (const type of DELETE_ORDER) {
+                    const numField = NUMBER_FIELD[type];
+                    const keys = tracked
+                        .filter(t => t.objectType === type)
+                        .map(t => Number(t.objectKey))
+                        .filter(n => !Number.isNaN(n));
+                    if (!keys.length) continue;
+
+                    const rows = await backend.run(
+                        SELECT.from(type).columns('ID').where({ [numField]: { in: keys } })
+                    );
+                    for (const r of rows) {
+                        await backend.delete(type, r.ID);
+                        deleted++;
+                    }
+                }
+
+                // Tracking-Eintraege fuer dieses System/Nutzer entfernen.
+                await DELETE.from(CreatedObjects).where({ system: sys.name, createdBy: owner });
+
+                console.log(`✅ Deleted ${deleted} objects from ${sys.name}.`);
+                return `Deleted ${deleted} objects from ${sys.name}.`;
+            } catch (err) {
+                console.error('❌ Delete failed:', err);
+                return req.error(500, `Delete failed: ${err.message}`);
+            }
+        });
+
         return super.init();
     }
 }

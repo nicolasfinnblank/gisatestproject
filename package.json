@@ -8,7 +8,6 @@
     "@sap-cloud-sdk/resilience": "^4",
     "@sap-cloud-sdk/util": "^4.6.0",
     "@sap/cds": "^9",
-    "@sap/low-code-event-handler": "^1.2.5",
     "@sap/xsenv": ">=3.3.2 <3.3.3",
     "@sap/xssec": "^4.13.0",
     "hdb": "^2.27.1",
@@ -17,14 +16,11 @@
   "devDependencies": {
     "@cap-js/cds-test": "^1.0.1",
     "@cap-js/sqlite": "^2",
-    "@sap/dev-cap-tools": "^1.31.0",
     "jest": "^30.4.2"
   },
   "scripts": {
     "start": "cds-serve",
-    "start-local": "npm run generate-entry-point && npm run cds-watch",
-    "generate-entry-point": "dev-cap-tools gen-entrypoint",
-    "cds-watch": "cds watch --open",
+    "watch": "cds watch",
     "test": "jest"
   },
   "jest": {
@@ -56,6 +52,5 @@
         "model": "srv/external/BackendAPI_3"
       }
     }
-  },
-  "lcap": true
+  }
 }

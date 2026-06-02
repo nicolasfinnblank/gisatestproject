@@ -57,7 +57,7 @@ module.exports = class GeneratorService extends cds.ApplicationService {
                     return req.error(500, 'Master data is empty. Check your CSV files!');
                 }
 
-                // 4. Generate entries
+                // 3. Generate entries
                 const entries = [];
                 for (let i = 0; i < numberrows; i++) {
                     const s = streets[Math.floor(Math.random() * streets.length)];
@@ -83,7 +83,7 @@ module.exports = class GeneratorService extends cds.ApplicationService {
                     });
                 }
 
-                // 5. Bulk insert into GeneratorData
+                // 4. Bulk insert into GeneratorData
                 await INSERT.into(GeneratorData).entries(entries);
                 console.log(`✅ Generated ${entries.length} identities.`);
                 return `Successfully generated ${numberrows} customers.`;

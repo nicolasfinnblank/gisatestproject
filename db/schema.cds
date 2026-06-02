@@ -64,6 +64,7 @@ entity GeneratorData
     lastName : String(50);
     postCode : String(5);
     houseNumber : String(3);
+    
     // Eigentuemer der Zeile (Login-ID). Wird beim Generieren gesetzt und sorgt
     // dafuer, dass jeder Nutzer nur seine eigenen Testdaten sieht/loescht/pusht.
     createdBy : String(255);
@@ -73,6 +74,7 @@ entity GeneratorData
 // als Mock hinterlegt (serviceName -> konfigurierter CAP-Service); in Produktion
 // zeigen sie auf echte S/4-Destinationen. Gemeinsame Konfiguration (nicht pro
 // Nutzer). Basis fuer Multi-System-Push und spaeter Copy.
+
 entity Systems : cuid
 {
     // Kurzer Anzeigename / Code, z.B. "S4D", "S4Q".
@@ -92,6 +94,7 @@ entity Systems : cuid
 // bleibt als Historie erhalten (anders als GeneratorData, das beim erneuten
 // Generieren geleert wird). Basis fuer die spaeteren Schritte Multi-System
 // und Copy.
+
 entity CreatedObjects : cuid
 {
     // Ziel-SAP-System (vorerst konstant; wird mit Multi-System parametrisiert).

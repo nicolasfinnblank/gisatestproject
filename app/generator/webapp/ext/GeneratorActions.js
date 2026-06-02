@@ -96,6 +96,11 @@ sap.ui.define([
     // Zur Tracking-Liste (eigenstaendige FE-App unter anderer URL).
     onShowTracking: function () {
       window.location.href = "/tracking/webapp/index.html";
+    },
+
+    // Zur Zielsystem-Verwaltung (eigenstaendige FE-App unter anderer URL).
+    onShowSystems: function () {
+      window.location.href = "/systems/webapp/index.html";
     }
   };
 });

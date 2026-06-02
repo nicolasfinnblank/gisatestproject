@@ -1,7 +1,7 @@
 {
   "_version": "1.65.0",
   "sap.app": {
-    "id": "gisamdg.generator",
+    "id": "gisamdg.systems",
     "type": "application",
     "i18n": "i18n/i18n.properties",
     "title": "{{appTitle}}",
@@ -31,7 +31,7 @@
     "models": {
       "i18n": {
         "type": "sap.ui.model.resource.ResourceModel",
-        "settings": { "bundleName": "gisamdg.generator.i18n.i18n", "async": true }
+        "settings": { "bundleName": "gisamdg.systems.i18n.i18n", "async": true }
       },
       "": {
         "dataSource": "mainService",
@@ -46,50 +46,41 @@
       "routes": [
         {
           "pattern": ":?query:",
-          "name": "GeneratorDataList",
-          "target": "GeneratorDataList"
+          "name": "SystemsList",
+          "target": "SystemsList"
         },
         {
-          "pattern": "GeneratorData({key}):?query:",
-          "name": "GeneratorDataObjectPage",
-          "target": "GeneratorDataObjectPage"
+          "pattern": "Systems({key}):?query:",
+          "name": "SystemsObjectPage",
+          "target": "SystemsObjectPage"
         }
       ],
       "targets": {
-        "GeneratorDataList": {
+        "SystemsList": {
           "type": "Component",
-          "id": "GeneratorDataList",
+          "id": "SystemsList",
           "name": "sap.fe.templates.ListReport",
           "options": {
             "settings": {
-              "entitySet": "GeneratorData",
+              "entitySet": "Systems",
               "variantManagement": "None",
+              "initialLoad": true,
               "navigation": {
-                "GeneratorData": {
-                  "detail": { "route": "GeneratorDataObjectPage" }
+                "Systems": {
+                  "detail": { "route": "SystemsObjectPage" }
                 }
               },
               "controlConfiguration": {
                 "@com.sap.vocabularies.UI.v1.LineItem": {
                   "actions": {
-                    "generate": {
-                      "press": "gisamdg.generator.ext.GeneratorActions.onGenerate",
-                      "text": "Generieren",
+                    "createSystem": {
+                      "press": "gisamdg.systems.ext.SystemsActions.onCreateSystem",
+                      "text": "Neues System",
                       "enabled": true
                     },
-                    "push": {
-                      "press": "gisamdg.generator.ext.GeneratorActions.onPush",
-                      "text": "An Backend pushen",
-                      "enabled": true
-                    },
-                    "showTracking": {
-                      "press": "gisamdg.generator.ext.GeneratorActions.onShowTracking",
-                      "text": "Tracking anzeigen",
-                      "enabled": true
-                    },
-                    "showSystems": {
-                      "press": "gisamdg.generator.ext.GeneratorActions.onShowSystems",
-                      "text": "Systeme verwalten",
+                    "backToGenerator": {
+                      "press": "gisamdg.systems.ext.SystemsActions.onBackToGenerator",
+                      "text": "Zum Generator",
                       "enabled": true
                     }
                   }
@@ -98,13 +89,13 @@
             }
           }
         },
-        "GeneratorDataObjectPage": {
+        "SystemsObjectPage": {
           "type": "Component",
-          "id": "GeneratorDataObjectPage",
+          "id": "SystemsObjectPage",
           "name": "sap.fe.templates.ObjectPage",
           "options": {
             "settings": {
-              "entitySet": "GeneratorData"
+              "entitySet": "Systems"
             }
           }
         }

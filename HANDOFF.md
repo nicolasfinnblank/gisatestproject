@@ -6,9 +6,10 @@
 ## Was es ist
 SAP CAP (Node.js) Web-App auf SAP BTP. Generiert realistische Test-Stammdaten
 (Business Partner, Adressen, Namen) aus Daten-Pools und pusht sie per OData an
-SAP S/4HANA-Backends. Kann mehrere Zielsysteme verwalten, das Angelegte tracken
-und Daten zwischen Systemen kopieren. Uni-Projekt mit GISA. Lokal SQLite, in
-Prod HANA. Fiori Elements UI. Aufgabenstellung als PDF (siehe "Offene Features").
+SAP S/4HANA-Backends. Kann mehrere Zielsysteme verwalten, das Angelegte tracken,
+Daten zwischen Systemen kopieren und im System wieder löschen. Uni-Projekt mit
+GISA. Lokal SQLite, in Prod HANA. Fiori Elements UI. Aufgabenstellung als PDF
+(siehe "Offene Features").
 
 ## Setup & Befehle
 - Pfad: `/Users/magnusbuchwald/Desktop/Coding/Generator`
@@ -17,27 +18,31 @@ Prod HANA. Fiori Elements UI. Aufgabenstellung als PDF (siehe "Offene Features")
 - Starten: `cds watch` → http://localhost:4004
 - FE-Apps: `/generator/webapp/index.html`, `/tracking/webapp/index.html`,
   `/systems/webapp/index.html`
-- Tests: `npm test` (15 Integrationstests, jest + cds.test)
+- Tests: `npm test` (17 Integrationstests, jest + cds.test)
 
 ## Git-Stand
 - `main` = Original (unberührt), auf GitHub.
 - `improvements` = **aktueller Hauptstand, auf GitHub gepusht** (origin/improvements).
   Enthält ALLES: echter OData-Push, Backend-Mock+Validierung, Auth+Multi-User,
-  Fiori-Elements-UI, **Tracking**, **Multi-System (2 Backends)**, **Copy**.
+  Fiori-Elements-UI, **Tracking**, **Multi-System (2 Backends)**, **Copy**,
+  **Löschen im System**.
 - Erledigte Feature-Branches (bereits in improvements gemergt, können weg):
-  `feat/fiori-elements-ui`, `feat/tracking`, `feat/multi-system`, `feat/copy`.
+  `feat/fiori-elements-ui`, `feat/tracking`, `feat/multi-system`, `feat/copy`,
+  `feat/delete`.
 - Arbeitsweise: pro Thema eigener Branch → in `improvements` mergen (Fast-Forward)
   wenn fertig → pushen. Erst lokal committen, später pushen.
 
 ## Was funktioniert (verifiziert)
-- Backend: **15/15 Tests grün** (Auth, Generieren, Multi-User-Isolation, Push,
-  Validierung, Tracking, Multi-System, Copy).
+- Backend: **17/17 Tests grün** (Auth, Generieren, Multi-User-Isolation, Push,
+  Validierung, Tracking, Multi-System, Copy, Löschen).
 - FE-UI (mit Playwright/headless Chrome objektiv getestet):
   - Generator-List-Report rendert; "Generieren" (Anzahl-Prompt) erzeugt Daten.
   - "An Backend pushen" → Dialog mit **Zielsystem-Dropdown** → Push ins gewählte
     Backend.
   - "Daten kopieren" → Dialog **Von/Nach** → kopiert die eigenen Partner ins
     Zielsystem (verifiziert: backend-3 0→2).
+  - "Im System löschen" → Warn-Dialog (System-Auswahl) → löscht die eigenen
+    Objekte wieder aus dem Backend (verifiziert: backend-2 2→0).
   - "Tracking anzeigen" / "Systeme verwalten" navigieren zu den anderen Apps.
   - Systeme-App: Liste + "Neues System" (Dialog) legt per POST an.
 
@@ -50,7 +55,8 @@ Prod HANA. Fiori Elements UI. Aufgabenstellung als PDF (siehe "Offene Features")
   **S4Q** (BackendAPI_3).
 - `srv/service.cds`: Service `GeneratorService`, @path `/service/generator`,
   @requires `Generator`. Actions: `generateTestCustomers(anzahl)`,
-  `pushToBackend(system)`, `copyData(sourceSystem, targetSystem)`.
+  `pushToBackend(system)`, `copyData(sourceSystem, targetSystem)`,
+  `deleteFromBackend(system)`.
   Entities: Pools, `GeneratorData` (per-user), `CreatedObjects` (read-only,
   per-user), `Systems` (CRUD, gemeinsam).
 - `srv/service.js`: Logik.
@@ -61,6 +67,9 @@ Prod HANA. Fiori Elements UI. Aufgabenstellung als PDF (siehe "Offene Features")
   - Copy: ermittelt aus `CreatedObjects` die eigenen BP-Keys im Quellsystem,
     liest BP→Address→Street/City **flach** (kein $expand!) aus dem Quell-Backend,
     legt sie im Ziel-Backend neu an, trackt unter Zielsystem.
+  - Delete: ermittelt aus `CreatedObjects` je Objekttyp die *Number, holt damit
+    die Backend-IDs und löscht **key-basiert** (BP→Address→Street→City); räumt
+    danach die Tracking-Einträge.
 - `srv/external/_mockBackend.js`: **geteilte** Mock-Logik (vergibt Nummern,
   erzwingt Validierung) für beide Backends.
 - `srv/external/BackendAPI_2.{csn,edmx,js}` + `BackendAPI_3.{csn,js}`: die zwei
@@ -102,13 +111,13 @@ Prod HANA. Fiori Elements UI. Aufgabenstellung als PDF (siehe "Offene Features")
 8. UI5 lädt vom CDN ui5.sap.com (erstmalig evtl. langsam, dann gecacht).
 
 ## Offene Features (aus der PDF-Aufgabenstellung)
-Die Kern-Features (Generierung, Pools, OData-Push, Mass-Creation, **Tracking für
-mehrere Systeme**, **Multi-System**, **Copy**, UIs) sind ALLE umgesetzt. Offen:
-- Optional: **Löschen** der angelegten Daten im SAP-System (Tracking liefert die
-  Keys → DELETE im jeweiligen Backend; analog Copy aufbaubar).
-- Optional: **mehr Objekttypen** ("multiple different master data entities";
-  aktuell BusinessPartner + Adresse, von der PDF als Beispiele genannt).
-- Später: **Building Blocks** zur UI-Verschönerung (Design nach Funktion).
+Alle Kern-Features UND das optionale **Löschen** sind umgesetzt: Generierung,
+Pools, OData-Push, Mass-Creation, **Tracking für mehrere Systeme**,
+**Multi-System**, **Copy**, **Löschen im System**, UIs. Noch offen (alles
+optional / Ausbau):
+- **mehr Objekttypen** ("multiple different master data entities"; aktuell
+  BusinessPartner + Adresse, von der PDF als Beispiele genannt).
+- **Building Blocks** zur UI-Verschönerung (Design nach Funktion).
 - `xsappname` in `xs-security.json` an echte XSUAA-Instanz anpassen (Deployment).
 
 ## Nutzer-Kontext

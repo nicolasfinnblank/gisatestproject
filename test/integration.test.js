@@ -186,7 +186,7 @@ describe('GISA Master Data Generator', () => {
       const bp3Before = (await GET(`${BACKEND3}/BusinessPartner`, asCarol)).data.value.length;
 
       const { data } = await POST(`${SRV}/copyData`, { sourceSystem: 's4d', targetSystem: 's4q' }, asCarol);
-      expect(data.value).to.match(/3 business partners from S4D to S4Q/);
+      expect(data.value).to.match(/3 Business Partner von S4D nach S4Q/);
 
       // Die 3 Partner sind jetzt zusaetzlich im Ziel-Backend (S4Q / backend-3).
       const bp3After = (await GET(`${BACKEND3}/BusinessPartner`, asCarol)).data.value.length;
@@ -214,7 +214,7 @@ describe('GISA Master Data Generator', () => {
       expect(bpNumbers.length).to.equal(3);
 
       const { data } = await POST(`${SRV}/deleteFromBackend`, { system: 's4d' }, asDave);
-      expect(data.value).to.match(/Deleted 12 objects from S4D/);
+      expect(data.value).to.match(/12 Objekte aus S4D/);
 
       // Tracking von dave ist leer.
       const after = (await GET(`${SRV}/CreatedObjects`, asDave)).data.value;

@@ -79,8 +79,7 @@ Generieren, Push ins richtige System, Copy und Delete.
 ## Dokumentation
 
 Eine ausführliche, einsteigerfreundliche Erklärung des gesamten Projekts liegt
-als PDF bei: [`GISA-Projekt-Erklaerung.pdf`](GISA-Projekt-Erklaerung.pdf)
-(erzeugbar mit `python3 scripts/build_doc.py`).
+als PDF bei: [`GISA-Projekt-Erklaerung.pdf`](GISA-Projekt-Erklaerung.pdf).
 
 ## Mehr zu CAP
 

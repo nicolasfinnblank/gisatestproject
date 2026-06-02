@@ -54,7 +54,7 @@ module.exports = class GeneratorService extends cds.ApplicationService {
                 ]);
 
                 if (streets.length === 0) {
-                    return req.error(500, 'Master data is empty. Check your CSV files!');
+                    return req.error(500, 'Stammdaten sind leer. Bitte die CSV-Dateien prüfen.');
                 }
 
                 // 3. Generate entries
@@ -85,12 +85,12 @@ module.exports = class GeneratorService extends cds.ApplicationService {
 
                 // 4. Bulk insert into GeneratorData
                 await INSERT.into(GeneratorData).entries(entries);
-                console.log(`✅ Generated ${entries.length} identities.`);
-                return `Successfully generated ${numberrows} customers.`;
+                console.log(`✅ ${entries.length} Datensätze generiert.`);
+                return `Erfolgreich ${numberrows} Testkunden generiert.`;
 
             } catch (err) {
-                console.error('❌ Generation failed:', err);
-                return req.error(500, `Generation failed: ${err.message}`);
+                console.error('❌ Generierung fehlgeschlagen:', err);
+                return req.error(500, `Generierung fehlgeschlagen: ${err.message}`);
             }
         });
 
@@ -115,7 +115,7 @@ module.exports = class GeneratorService extends cds.ApplicationService {
                 // Nur die EIGENEN generierten Zeilen pushen (Multi-User-sicher)
                 const owner = req.user.id || 'anonymous';
                 const localCustomers = await SELECT.from(GeneratorData).where({ createdBy: owner });
-                if (localCustomers.length === 0) return req.error(400, "Local database is empty. Generate data first.");
+                if (localCustomers.length === 0) return req.error(400, "Keine generierten Daten vorhanden. Bitte zuerst generieren.");
 
                 let pushed = 0;
                 const now = new Date().toISOString();
@@ -164,11 +164,11 @@ module.exports = class GeneratorService extends cds.ApplicationService {
                 // Tracking-Zeilen gesammelt schreiben (Historie, wird nicht geleert).
                 if (tracked.length) await INSERT.into(CreatedObjects).entries(tracked);
 
-                console.log(`✅ Pushed ${pushed} business partners to ${sys.name} (${tracked.length} objects tracked).`);
-                return `Successfully pushed ${pushed} customers to ${sys.name}.`;
+                console.log(`✅ ${pushed} Business Partner nach ${sys.name} übertragen (${tracked.length} Objekte protokolliert).`);
+                return `Erfolgreich ${pushed} Kunden nach ${sys.name} übertragen.`;
             } catch (err) {
-                console.error('❌ Push failed:', err);
-                return req.error(500, `Push failed: ${err.message}`);
+                console.error('❌ Übertragung fehlgeschlagen:', err);
+                return req.error(500, `Übertragung fehlgeschlagen: ${err.message}`);
             }
         });
 
@@ -258,11 +258,11 @@ module.exports = class GeneratorService extends cds.ApplicationService {
 
                 if (newTracked.length) await INSERT.into(CreatedObjects).entries(newTracked);
 
-                console.log(`✅ Copied ${copied} business partners from ${srcSys.name} to ${tgtSys.name}.`);
-                return `Copied ${copied} business partners from ${srcSys.name} to ${tgtSys.name}.`;
+                console.log(`✅ ${copied} Business Partner von ${srcSys.name} nach ${tgtSys.name} kopiert.`);
+                return `${copied} Business Partner von ${srcSys.name} nach ${tgtSys.name} kopiert.`;
             } catch (err) {
-                console.error('❌ Copy failed:', err);
-                return req.error(500, `Copy failed: ${err.message}`);
+                console.error('❌ Kopieren fehlgeschlagen:', err);
+                return req.error(500, `Kopieren fehlgeschlagen: ${err.message}`);
             }
         });
 
@@ -319,11 +319,11 @@ module.exports = class GeneratorService extends cds.ApplicationService {
                 // Tracking-Eintraege fuer dieses System/Nutzer entfernen.
                 await DELETE.from(CreatedObjects).where({ system: sys.name, createdBy: owner });
 
-                console.log(`✅ Deleted ${deleted} objects from ${sys.name}.`);
-                return `Deleted ${deleted} objects from ${sys.name}.`;
+                console.log(`✅ ${deleted} Objekte aus ${sys.name} gelöscht.`);
+                return `${deleted} Objekte aus ${sys.name} gelöscht.`;
             } catch (err) {
-                console.error('❌ Delete failed:', err);
-                return req.error(500, `Delete failed: ${err.message}`);
+                console.error('❌ Löschen fehlgeschlagen:', err);
+                return req.error(500, `Löschen fehlgeschlagen: ${err.message}`);
             }
         });
 

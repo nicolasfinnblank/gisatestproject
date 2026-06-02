@@ -172,6 +172,100 @@ module.exports = class GeneratorService extends cds.ApplicationService {
             }
         });
 
+        // --- HANDLER: Copy data from one system into another ---
+        this.on('copyData', async (req) => {
+            try {
+                const { sourceSystem, targetSystem } = req.data;
+                if (!sourceSystem || !targetSystem) {
+                    return req.error(400, 'Quell- und Zielsystem angeben.');
+                }
+                if (sourceSystem === targetSystem) {
+                    return req.error(400, 'Quell- und Zielsystem müssen unterschiedlich sein.');
+                }
+
+                const [srcSys, tgtSys] = await Promise.all([
+                    SELECT.one.from(Systems).where({ ID: sourceSystem }),
+                    SELECT.one.from(Systems).where({ ID: targetSystem })
+                ]);
+                if (!srcSys) return req.error(400, `Unbekanntes Quellsystem '${sourceSystem}'.`);
+                if (!tgtSys) return req.error(400, `Unbekanntes Zielsystem '${targetSystem}'.`);
+
+                const owner = req.user.id || 'anonymous';
+
+                // Welche Business Partner hat dieser Nutzer im Quellsystem angelegt?
+                // (Aus dem Tracking – so ist die Kopie multi-user-sicher.)
+                const trackedBPs = await SELECT.from(CreatedObjects).where({
+                    system: srcSys.name, objectType: 'BusinessPartner', createdBy: owner
+                });
+                if (trackedBPs.length === 0) {
+                    return req.error(400, `Im System ${srcSys.name} hast du keine Business Partner angelegt.`);
+                }
+                const keys = trackedBPs.map(t => Number(t.objectKey)).filter(n => !Number.isNaN(n));
+
+                // Die vollstaendigen Datensaetze aus dem Quell-Backend lesen.
+                // Flach in Schritten (statt tiefem $expand, das der OData-Mock
+                // nicht unterstuetzt): BP -> Address -> Street/City.
+                const source = await cds.connect.to(srcSys.serviceName);
+                const partners = await source.run(
+                    SELECT.from('BusinessPartner').where({ businessPartnerNumber: { in: keys } })
+                );
+                const byId = (rows) => Object.fromEntries(rows.map(r => [r.ID, r]));
+                const addrIds = [...new Set(partners.map(p => p.address_ID).filter(Boolean))];
+                const addresses = addrIds.length
+                    ? await source.run(SELECT.from('Address').where({ ID: { in: addrIds } })) : [];
+                const addrById = byId(addresses);
+                const streetIds = [...new Set(addresses.map(a => a.street_ID).filter(Boolean))];
+                const cityIds   = [...new Set(addresses.map(a => a.city_ID).filter(Boolean))];
+                const streetById = byId(streetIds.length
+                    ? await source.run(SELECT.from('Street').where({ ID: { in: streetIds } })) : []);
+                const cityById = byId(cityIds.length
+                    ? await source.run(SELECT.from('City').where({ ID: { in: cityIds } })) : []);
+
+                // Im Ziel-Backend neu anlegen (gleiche Reihenfolge wie beim Push).
+                const target = await cds.connect.to(tgtSys.serviceName);
+                const now = new Date().toISOString();
+                const newTracked = [];
+                let copied = 0;
+                for (const p of partners) {
+                    const addr   = addrById[p.address_ID] || {};
+                    const street0 = streetById[addr.street_ID] || {};
+                    const city0   = cityById[addr.city_ID] || {};
+                    const streetId = cds.utils.uuid();
+                    const cityId   = cds.utils.uuid();
+                    const addrId   = cds.utils.uuid();
+
+                    const street = await target.create('Street').entries({ ID: streetId, name: street0.name });
+                    const city   = await target.create('City').entries({   ID: cityId,   name: city0.name });
+                    const address = await target.create('Address').entries({
+                        ID: addrId, street_ID: streetId, city_ID: cityId,
+                        houseNumber: addr.houseNumber, postalCode: addr.postalCode
+                    });
+                    const partner = await target.create('BusinessPartner').entries({
+                        firstName: p.firstName, surName: p.surName, address_ID: addrId
+                    });
+
+                    const track = (objectType, objectKey) => newTracked.push({
+                        system: tgtSys.name, objectType,
+                        objectKey: String(objectKey),
+                        sourceConcatID: null, createdBy: owner, createdAt: now
+                    });
+                    track('Street',          street?.streetNumber          ?? streetId);
+                    track('City',            city?.cityNumber              ?? cityId);
+                    track('Address',         address?.addressNumber        ?? addrId);
+                    track('BusinessPartner', partner?.businessPartnerNumber ?? '');
+                    copied++;
+                }
+
+                if (newTracked.length) await INSERT.into(CreatedObjects).entries(newTracked);
+
+                console.log(`✅ Copied ${copied} business partners from ${srcSys.name} to ${tgtSys.name}.`);
+                return `Copied ${copied} business partners from ${srcSys.name} to ${tgtSys.name}.`;
+            } catch (err) {
+                console.error('❌ Copy failed:', err);
+                return req.error(500, `Copy failed: ${err.message}`);
+            }
+        });
+
         return super.init();
     }
 }

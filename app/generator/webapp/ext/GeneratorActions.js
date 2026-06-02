@@ -93,6 +93,56 @@ sap.ui.define([
       }).catch(function (e) { MessageToast.show("Fehler: " + e.message); });
     },
 
+    // Daten von einem System ins andere kopieren (Dialog: Von / Nach).
+    onCopy: function () {
+      loadSystems().then(function (aSystems) {
+        if (aSystems.length < 2) {
+          MessageToast.show("Mindestens zwei Zielsysteme noetig (siehe 'Systeme verwalten').");
+          return;
+        }
+
+        function buildSelect() {
+          const oSel = new Select({ width: "100%" });
+          aSystems.forEach(function (s) {
+            oSel.addItem(new Item({ key: s.ID, text: s.name + (s.description ? " – " + s.description : "") }));
+          });
+          return oSel;
+        }
+        const oFrom = buildSelect();
+        const oTo = buildSelect();
+        const oDefault = aSystems.find(function (s) { return s.isDefault; }) || aSystems[0];
+        const oOther = aSystems.find(function (s) { return s.ID !== oDefault.ID; });
+        oFrom.setSelectedKey(oDefault.ID);
+        oTo.setSelectedKey(oOther.ID);
+
+        const oDialog = new Dialog({
+          title: "Daten zwischen Systemen kopieren",
+          content: new VBox({
+            items: [
+              new Label({ text: "Von (Quelle):", labelFor: oFrom }), oFrom,
+              new Label({ text: "Nach (Ziel):", labelFor: oTo }), oTo
+            ]
+          }).addStyleClass("sapUiContentPadding"),
+          beginButton: new Button({
+            text: "Kopieren",
+            type: "Emphasized",
+            press: function () {
+              const sFrom = oFrom.getSelectedKey();
+              const sTo = oTo.getSelectedKey();
+              if (sFrom === sTo) { MessageToast.show("Quelle und Ziel muessen unterschiedlich sein."); return; }
+              oDialog.close();
+              callAction("copyData", { sourceSystem: sFrom, targetSystem: sTo })
+                .then(function (msg) { MessageToast.show(msg || "Kopiert"); })
+                .catch(function (e) { MessageToast.show("Fehler: " + e.message); });
+            }
+          }),
+          endButton: new Button({ text: "Abbrechen", press: function () { oDialog.close(); } }),
+          afterClose: function () { oDialog.destroy(); }
+        });
+        oDialog.open();
+      }).catch(function (e) { MessageToast.show("Fehler: " + e.message); });
+    },
+
     // Zur Tracking-Liste (eigenstaendige FE-App unter anderer URL).
     onShowTracking: function () {
       window.location.href = "/tracking/webapp/index.html";

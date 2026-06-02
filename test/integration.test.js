@@ -7,6 +7,7 @@ cds.env.requires.auth = {
   users: {
     alice:   { password: 'alice',   roles: ['Generator'] },
     bob:     { password: 'bob',     roles: ['Generator'] },
+    carol:   { password: 'carol',   roles: ['Generator'] },
     mallory: { password: 'mallory', roles: [] }
   }
 };
@@ -17,6 +18,7 @@ const { GET, POST, expect } = cds.test('serve', 'all', '--with-mocks', '--in-mem
 
 const asAlice   = { auth: { username: 'alice',   password: 'alice'   } };
 const asBob     = { auth: { username: 'bob',     password: 'bob'     } };
+const asCarol   = { auth: { username: 'carol',   password: 'carol'   } };
 const asMallory = { auth: { username: 'mallory', password: 'mallory' } };
 
 const SRV = '/service/generator';
@@ -164,6 +166,36 @@ describe('GISA Master Data Generator', () => {
       const tracked = (await GET(`${SRV}/CreatedObjects?$filter=system eq 'S4Q'`, asAlice)).data.value;
       expect(tracked.length).to.be.at.least(8);  // 2 Kunden x 4 Objekte
       expect([...new Set(tracked.map(t => t.system))]).to.eql(['S4Q']);
+    });
+  });
+
+  describe('Copy zwischen Systemen', () => {
+    const BACKEND3 = '/odata/v4/backend-api-3';
+
+    it('lehnt Copy mit gleichem Quell- und Zielsystem ab (400)', async () => {
+      await expectStatus(POST(`${SRV}/copyData`, { sourceSystem: 's4d', targetSystem: 's4d' }, asCarol), 400);
+    });
+
+    it('kopiert die eigenen Partner von S4D nach S4Q und trackt sie dort', async () => {
+      // carol erzeugt + pusht 3 Partner ins Default-System S4D
+      await POST(`${SRV}/generateTestCustomers`, { anzahl: 3 }, asCarol);
+      await POST(`${SRV}/pushToBackend`, {}, asCarol);
+
+      const bp3Before = (await GET(`${BACKEND3}/BusinessPartner`, asCarol)).data.value.length;
+
+      const { data } = await POST(`${SRV}/copyData`, { sourceSystem: 's4d', targetSystem: 's4q' }, asCarol);
+      expect(data.value).to.match(/3 business partners from S4D to S4Q/);
+
+      // Die 3 Partner sind jetzt zusaetzlich im Ziel-Backend (S4Q / backend-3).
+      const bp3After = (await GET(`${BACKEND3}/BusinessPartner`, asCarol)).data.value.length;
+      expect(bp3After - bp3Before).to.equal(3);
+
+      // Tracking weist die Kopien als S4Q-BusinessPartner von carol aus.
+      const tracked = (await GET(
+        `${SRV}/CreatedObjects?$filter=system eq 'S4Q' and objectType eq 'BusinessPartner'`, asCarol
+      )).data.value;
+      expect(tracked.length).to.equal(3);
+      expect([...new Set(tracked.map(t => t.createdBy))]).to.eql(['carol']);
     });
   });
 

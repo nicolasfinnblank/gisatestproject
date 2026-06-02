@@ -32,4 +32,7 @@ service GeneratorService {
     action generateTestCustomers(anzahl : Integer) returns String;
     // system: ID eines Eintrags aus Systems. Leer -> Default-System.
     action pushToBackend(system : String) returns String;
+    // Kopiert die vom Nutzer im Quellsystem angelegten Business Partner
+    // (inkl. Adresse) in das Zielsystem. sourceSystem/targetSystem = Systems.ID.
+    action copyData(sourceSystem : String, targetSystem : String) returns String;
 }

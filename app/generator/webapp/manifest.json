@@ -82,6 +82,11 @@
                       "text": "An Backend pushen",
                       "enabled": true
                     },
+                    "copy": {
+                      "press": "gisamdg.generator.ext.GeneratorActions.onCopy",
+                      "text": "Daten kopieren",
+                      "enabled": true
+                    },
                     "showTracking": {
                       "press": "gisamdg.generator.ext.GeneratorActions.onShowTracking",
                       "text": "Tracking anzeigen",

@@ -26,6 +26,10 @@ service GeneratorService {
     ]
     entity CreatedObjects as projection on my.CreatedObjects;
 
+    // Katalog der Ziel-Systeme: gemeinsam gepflegt (CRUD fuer Generator-Rolle).
+    entity Systems as projection on my.Systems;
+
     action generateTestCustomers(anzahl : Integer) returns String;
-    action pushToBackend() returns String;
+    // system: ID eines Eintrags aus Systems. Leer -> Default-System.
+    action pushToBackend(system : String) returns String;
 }

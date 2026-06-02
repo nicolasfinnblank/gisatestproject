@@ -32,12 +32,8 @@ module.exports = class GeneratorService extends cds.ApplicationService {
         const {
             StreetNames, Cities, Neighborhoods,
             FirstNames, LastNames, PostCodes,
-            HouseNumbers, GeneratorData, CreatedObjects
+            HouseNumbers, GeneratorData, CreatedObjects, Systems
         } = this.entities;
-
-        // Kennung des Ziel-Systems. Vorerst konstant – wird im naechsten Schritt
-        // (Multi-System) durch das tatsaechlich gewaehlte Zielsystem ersetzt.
-        const TARGET_SYSTEM = 'BackendAPI_2';
 
         // --- HANDLER: Generate Test Customers ---
         this.on('generateTestCustomers', async (req) => {
@@ -101,8 +97,20 @@ module.exports = class GeneratorService extends cds.ApplicationService {
         // --- HANDLER: Push to Backend ---
         this.on('pushToBackend', async (req) => {
             try {
-                // Verbindung zum Backend-Service (lokal gemockt bzw. in Produktion das echte S/4)
-                const backend = await cds.connect.to('BackendAPI_2');
+                // Zielsystem bestimmen: explizit gewaehlt (req.data.system = Systems.ID)
+                // oder das als Default markierte System.
+                const sys = req.data.system
+                    ? await SELECT.one.from(Systems).where({ ID: req.data.system })
+                    : await SELECT.one.from(Systems).where({ isDefault: true });
+                if (!sys) {
+                    return req.error(400, req.data.system
+                        ? `Unbekanntes Zielsystem '${req.data.system}'.`
+                        : 'Kein Default-Zielsystem konfiguriert.');
+                }
+
+                // Verbindung zum Backend-Service des Zielsystems (lokal gemockt
+                // bzw. in Produktion die echte S/4-Destination).
+                const backend = await cds.connect.to(sys.serviceName);
 
                 // Nur die EIGENEN generierten Zeilen pushen (Multi-User-sicher)
                 const owner = req.user.id || 'anonymous';
@@ -142,7 +150,7 @@ module.exports = class GeneratorService extends cds.ApplicationService {
                     // 4. Tracking: je angelegtem Objekt eine Zeile mit dem vom
                     //    Backend vergebenen Schluessel (Fallback: unsere ID).
                     const track = (objectType, objectKey) => tracked.push({
-                        system: TARGET_SYSTEM, objectType,
+                        system: sys.name, objectType,
                         objectKey: String(objectKey),
                         sourceConcatID: cust.concatID, createdBy: owner, createdAt: now
                     });
@@ -156,8 +164,8 @@ module.exports = class GeneratorService extends cds.ApplicationService {
                 // Tracking-Zeilen gesammelt schreiben (Historie, wird nicht geleert).
                 if (tracked.length) await INSERT.into(CreatedObjects).entries(tracked);
 
-                console.log(`✅ Pushed ${pushed} business partners to backend (${tracked.length} objects tracked).`);
-                return `Successfully pushed ${pushed} customers to backend.`;
+                console.log(`✅ Pushed ${pushed} business partners to ${sys.name} (${tracked.length} objects tracked).`);
+                return `Successfully pushed ${pushed} customers to ${sys.name}.`;
             } catch (err) {
                 console.error('❌ Push failed:', err);
                 return req.error(500, `Push failed: ${err.message}`);

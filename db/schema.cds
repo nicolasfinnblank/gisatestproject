@@ -69,6 +69,24 @@ entity GeneratorData
     createdBy : String(255);
 }
 
+// Katalog der Ziel-SAP-Systeme, in die gepusht werden kann. Lokal sind beide
+// als Mock hinterlegt (serviceName -> konfigurierter CAP-Service); in Produktion
+// zeigen sie auf echte S/4-Destinationen. Gemeinsame Konfiguration (nicht pro
+// Nutzer). Basis fuer Multi-System-Push und spaeter Copy.
+entity Systems : cuid
+{
+    // Kurzer Anzeigename / Code, z.B. "S4D", "S4Q".
+    name        : String(20)
+        @mandatory;
+    description : String(200);
+    // Name des konfigurierten CAP-Remote-Service (package.json cds.requires),
+    // ueber den dieses System angesprochen wird: BackendAPI_2 / BackendAPI_3 / ...
+    serviceName : String(100)
+        @mandatory;
+    // Default-Ziel, wenn beim Push kein System gewaehlt wird.
+    isDefault   : Boolean default false;
+}
+
 // Protokoll der angelegten Entitaeten: WELCHES Objekt wurde in WELCHEM
 // SAP-System mit WELCHEM Schluessel angelegt. Wird beim Push befuellt und
 // bleibt als Historie erhalten (anders als GeneratorData, das beim erneuten

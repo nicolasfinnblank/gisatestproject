@@ -234,3 +234,45 @@ annotate GeneratorService.CreatedObjects with @UI.Facets: [
   { $Type: 'UI.ReferenceFacet', ID: 'Details', Label: 'Details', Target: '@UI.FieldGroup#Details' }
 ];
 
+//
+// --- Ziel-Systeme (Verwaltung) ---
+//
+annotate GeneratorService.Systems with @UI.HeaderInfo: {
+  TypeName: 'Zielsystem',
+  TypeNamePlural: 'Zielsysteme',
+  Title: { Value: name },
+  Description: { Value: description }
+};
+
+annotate GeneratorService.Systems with {
+  ID          @UI.Hidden;
+  name        @title: 'System';
+  description @title: 'Beschreibung';
+  serviceName @title: 'Service';
+  isDefault   @title: 'Standard';
+};
+
+annotate GeneratorService.Systems with @UI.LineItem: [
+  { $Type: 'UI.DataField', Value: name },
+  { $Type: 'UI.DataField', Value: description },
+  { $Type: 'UI.DataField', Value: serviceName },
+  { $Type: 'UI.DataField', Value: isDefault }
+];
+
+annotate GeneratorService.Systems with @UI.SelectionFields: [
+  name, isDefault
+];
+
+annotate GeneratorService.Systems with @UI.FieldGroup #Main: {
+  $Type: 'UI.FieldGroupType', Data: [
+    { $Type: 'UI.DataField', Value: name },
+    { $Type: 'UI.DataField', Value: description },
+    { $Type: 'UI.DataField', Value: serviceName },
+    { $Type: 'UI.DataField', Value: isDefault }
+  ]
+};
+
+annotate GeneratorService.Systems with @UI.Facets: [
+  { $Type: 'UI.ReferenceFacet', ID: 'Main', Label: 'Allgemein', Target: '@UI.FieldGroup#Main' }
+];
+

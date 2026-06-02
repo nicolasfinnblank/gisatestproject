@@ -1,0 +1,3 @@
+ID,name,description,serviceName,isDefault
+s4d,S4D,SAP S/4HANA Development (Mock),BackendAPI_2,true
+s4q,S4Q,SAP S/4HANA Quality (Mock),BackendAPI_3,false

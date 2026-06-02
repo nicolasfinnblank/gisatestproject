@@ -1,0 +1,364 @@
+{
+ "meta": {
+  "creator": "cds-dk 9.9.0"
+ },
+ "$version": "2.0",
+ "definitions": {
+  "BackendAPI_3.BusinessPartner": {
+   "kind": "entity",
+   "@cds.external": true,
+   "@cds.persistence.skip": true,
+   "elements": {
+    "ID": {
+     "key": true,
+     "type": "cds.UUID",
+     "notNull": true,
+     "@Core.ComputedDefaultValue": true
+    },
+    "createdAt": {
+     "type": "cds.Timestamp",
+     "@odata.Precision": 7,
+     "@odata.Type": "Edm.DateTimeOffset",
+     "@UI.HiddenFilter": true,
+     "@UI.ExcludeFromNavigationContext": true,
+     "@Core.Immutable": true,
+     "@Core.Computed": true,
+     "@Common.Label": "Angelegt am"
+    },
+    "createdBy": {
+     "type": "cds.String",
+     "length": 255,
+     "@UI.HiddenFilter": true,
+     "@UI.ExcludeFromNavigationContext": true,
+     "@Core.Immutable": true,
+     "@Core.Computed": true,
+     "doc": "Die eindeutige ID eines Benutzers",
+     "@Common.Label": "Angelegt von"
+    },
+    "modifiedAt": {
+     "type": "cds.Timestamp",
+     "@odata.Precision": 7,
+     "@odata.Type": "Edm.DateTimeOffset",
+     "@UI.HiddenFilter": true,
+     "@UI.ExcludeFromNavigationContext": true,
+     "@Core.Computed": true,
+     "@Common.Label": "Geändert am"
+    },
+    "modifiedBy": {
+     "type": "cds.String",
+     "length": 255,
+     "@UI.HiddenFilter": true,
+     "@UI.ExcludeFromNavigationContext": true,
+     "@Core.Computed": true,
+     "doc": "Die eindeutige ID eines Benutzers",
+     "@Common.Label": "Geändert von"
+    },
+    "businessPartnerNumber": {
+     "type": "cds.Integer64",
+     "notNull": true,
+     "@Core.Computed": true,
+     "@Validation.Minimum": 1,
+     "@Validation.Maximum": 9999999999
+    },
+    "firstName": {
+     "type": "cds.String",
+     "@Common.FieldControl": {
+      "#": "Mandatory"
+     }
+    },
+    "surName": {
+     "type": "cds.String",
+     "@Common.FieldControl": {
+      "#": "Mandatory"
+     }
+    },
+    "address_ID": {
+     "type": "cds.UUID"
+    },
+    "address": {
+     "type": "cds.Association",
+     "target": "BackendAPI_3.Address",
+     "cardinality": {
+      "max": 1
+     },
+     "on": [
+      {
+       "ref": [
+        "address",
+        "ID"
+       ]
+      },
+      "=",
+      {
+       "ref": [
+        "address_ID"
+       ]
+      }
+     ]
+    }
+   }
+  },
+  "BackendAPI_3.Address": {
+   "kind": "entity",
+   "@cds.external": true,
+   "@cds.persistence.skip": true,
+   "elements": {
+    "ID": {
+     "key": true,
+     "type": "cds.UUID",
+     "notNull": true,
+     "@Core.ComputedDefaultValue": true
+    },
+    "createdAt": {
+     "type": "cds.Timestamp",
+     "@odata.Precision": 7,
+     "@odata.Type": "Edm.DateTimeOffset",
+     "@UI.HiddenFilter": true,
+     "@UI.ExcludeFromNavigationContext": true,
+     "@Core.Immutable": true,
+     "@Core.Computed": true,
+     "@Common.Label": "Angelegt am"
+    },
+    "createdBy": {
+     "type": "cds.String",
+     "length": 255,
+     "@UI.HiddenFilter": true,
+     "@UI.ExcludeFromNavigationContext": true,
+     "@Core.Immutable": true,
+     "@Core.Computed": true,
+     "doc": "Die eindeutige ID eines Benutzers",
+     "@Common.Label": "Angelegt von"
+    },
+    "modifiedAt": {
+     "type": "cds.Timestamp",
+     "@odata.Precision": 7,
+     "@odata.Type": "Edm.DateTimeOffset",
+     "@UI.HiddenFilter": true,
+     "@UI.ExcludeFromNavigationContext": true,
+     "@Core.Computed": true,
+     "@Common.Label": "Geändert am"
+    },
+    "modifiedBy": {
+     "type": "cds.String",
+     "length": 255,
+     "@UI.HiddenFilter": true,
+     "@UI.ExcludeFromNavigationContext": true,
+     "@Core.Computed": true,
+     "doc": "Die eindeutige ID eines Benutzers",
+     "@Common.Label": "Geändert von"
+    },
+    "addressNumber": {
+     "type": "cds.Integer64",
+     "notNull": true,
+     "@Core.Computed": true,
+     "@Validation.Minimum": 1,
+     "@Validation.Maximum": 9999999999
+    },
+    "street_ID": {
+     "type": "cds.UUID",
+     "@Common.FieldControl": {
+      "#": "Mandatory"
+     }
+    },
+    "houseNumber": {
+     "type": "cds.String",
+     "length": 10,
+     "notNull": true,
+     "@Validation.Pattern": "[0-9]{1,4}[a-z]",
+     "@Common.FieldControl": {
+      "#": "Mandatory"
+     }
+    },
+    "postalCode": {
+     "type": "cds.String",
+     "length": 5,
+     "notNull": true,
+     "@Validation.Pattern": "[0-9]{5}",
+     "@Common.FieldControl": {
+      "#": "Mandatory"
+     }
+    },
+    "city_ID": {
+     "type": "cds.UUID",
+     "@Common.FieldControl": {
+      "#": "Mandatory"
+     }
+    },
+    "street": {
+     "type": "cds.Association",
+     "target": "BackendAPI_3.Street",
+     "cardinality": {
+      "max": 1
+     },
+     "on": [
+      {
+       "ref": [
+        "street",
+        "ID"
+       ]
+      },
+      "=",
+      {
+       "ref": [
+        "street_ID"
+       ]
+      }
+     ]
+    },
+    "city": {
+     "type": "cds.Association",
+     "target": "BackendAPI_3.City",
+     "cardinality": {
+      "max": 1
+     },
+     "on": [
+      {
+       "ref": [
+        "city",
+        "ID"
+       ]
+      },
+      "=",
+      {
+       "ref": [
+        "city_ID"
+       ]
+      }
+     ]
+    }
+   }
+  },
+  "BackendAPI_3.Street": {
+   "kind": "entity",
+   "@cds.external": true,
+   "@cds.persistence.skip": true,
+   "elements": {
+    "ID": {
+     "key": true,
+     "type": "cds.UUID",
+     "notNull": true,
+     "@Core.ComputedDefaultValue": true
+    },
+    "createdAt": {
+     "type": "cds.Timestamp",
+     "@odata.Precision": 7,
+     "@odata.Type": "Edm.DateTimeOffset",
+     "@UI.HiddenFilter": true,
+     "@UI.ExcludeFromNavigationContext": true,
+     "@Core.Immutable": true,
+     "@Core.Computed": true,
+     "@Common.Label": "Angelegt am"
+    },
+    "createdBy": {
+     "type": "cds.String",
+     "length": 255,
+     "@UI.HiddenFilter": true,
+     "@UI.ExcludeFromNavigationContext": true,
+     "@Core.Immutable": true,
+     "@Core.Computed": true,
+     "doc": "Die eindeutige ID eines Benutzers",
+     "@Common.Label": "Angelegt von"
+    },
+    "modifiedAt": {
+     "type": "cds.Timestamp",
+     "@odata.Precision": 7,
+     "@odata.Type": "Edm.DateTimeOffset",
+     "@UI.HiddenFilter": true,
+     "@UI.ExcludeFromNavigationContext": true,
+     "@Core.Computed": true,
+     "@Common.Label": "Geändert am"
+    },
+    "modifiedBy": {
+     "type": "cds.String",
+     "length": 255,
+     "@UI.HiddenFilter": true,
+     "@UI.ExcludeFromNavigationContext": true,
+     "@Core.Computed": true,
+     "doc": "Die eindeutige ID eines Benutzers",
+     "@Common.Label": "Geändert von"
+    },
+    "streetNumber": {
+     "type": "cds.Integer64",
+     "notNull": true,
+     "@Core.Computed": true,
+     "@Validation.Minimum": 1,
+     "@Validation.Maximum": 9999999999
+    },
+    "name": {
+     "type": "cds.String",
+     "@Common.FieldControl": {
+      "#": "Mandatory"
+     }
+    }
+   }
+  },
+  "BackendAPI_3.City": {
+   "kind": "entity",
+   "@cds.external": true,
+   "@cds.persistence.skip": true,
+   "elements": {
+    "ID": {
+     "key": true,
+     "type": "cds.UUID",
+     "notNull": true,
+     "@Core.ComputedDefaultValue": true
+    },
+    "createdAt": {
+     "type": "cds.Timestamp",
+     "@odata.Precision": 7,
+     "@odata.Type": "Edm.DateTimeOffset",
+     "@UI.HiddenFilter": true,
+     "@UI.ExcludeFromNavigationContext": true,
+     "@Core.Immutable": true,
+     "@Core.Computed": true,
+     "@Common.Label": "Angelegt am"
+    },
+    "createdBy": {
+     "type": "cds.String",
+     "length": 255,
+     "@UI.HiddenFilter": true,
+     "@UI.ExcludeFromNavigationContext": true,
+     "@Core.Immutable": true,
+     "@Core.Computed": true,
+     "doc": "Die eindeutige ID eines Benutzers",
+     "@Common.Label": "Angelegt von"
+    },
+    "modifiedAt": {
+     "type": "cds.Timestamp",
+     "@odata.Precision": 7,
+     "@odata.Type": "Edm.DateTimeOffset",
+     "@UI.HiddenFilter": true,
+     "@UI.ExcludeFromNavigationContext": true,
+     "@Core.Computed": true,
+     "@Common.Label": "Geändert am"
+    },
+    "modifiedBy": {
+     "type": "cds.String",
+     "length": 255,
+     "@UI.HiddenFilter": true,
+     "@UI.ExcludeFromNavigationContext": true,
+     "@Core.Computed": true,
+     "doc": "Die eindeutige ID eines Benutzers",
+     "@Common.Label": "Geändert von"
+    },
+    "cityNumber": {
+     "type": "cds.Integer64",
+     "notNull": true,
+     "@Core.Computed": true,
+     "@Validation.Minimum": 1,
+     "@Validation.Maximum": 9999999999
+    },
+    "name": {
+     "type": "cds.String",
+     "@Common.FieldControl": {
+      "#": "Mandatory"
+     }
+    }
+   }
+  },
+  "BackendAPI_3": {
+   "kind": "service",
+   "@cds.external": true
+  }
+ }
+}

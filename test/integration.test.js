@@ -113,7 +113,7 @@ describe('GISA Master Data Generator', () => {
       expect(types).to.eql(['Address', 'BusinessPartner', 'City', 'Street']);
 
       for (const t of tracked) {
-        expect(t.system).to.equal('BackendAPI_2');
+        expect(t.system).to.equal('S4D');  // Default-Zielsystem
         expect(t.objectKey).to.be.a('string').and.not.equal('');
         expect(t.createdBy).to.equal('alice');
       }
@@ -135,6 +135,35 @@ describe('GISA Master Data Generator', () => {
       expect(bobTracked.length - bobBefore).to.equal(4);       // 1 x 4
       // alice sieht ausschliesslich eigene Eintraege (bobs Push taucht nicht auf)
       expect([...new Set(aliceTracked.map(t => t.createdBy))]).to.eql(['alice']);
+    });
+  });
+
+  describe('Multi-System', () => {
+    const BACKEND3 = '/odata/v4/backend-api-3';
+
+    it('stellt die konfigurierten Zielsysteme bereit (Default + zweites)', async () => {
+      const systems = (await GET(`${SRV}/Systems`, asAlice)).data.value;
+      const byName = Object.fromEntries(systems.map(s => [s.name, s]));
+      expect(byName).to.have.keys(['S4D', 'S4Q']);
+      expect(byName.S4D.isDefault).to.equal(true);
+      expect(byName.S4Q.serviceName).to.equal('BackendAPI_3');
+    });
+
+    it('pusht in das gewaehlte zweite System (S4Q) und trackt es getrennt', async () => {
+      const bp3Before = (await GET(`${BACKEND3}/BusinessPartner`, asAlice)).data.value.length;
+
+      await POST(`${SRV}/generateTestCustomers`, { anzahl: 2 }, asAlice);
+      const { data } = await POST(`${SRV}/pushToBackend`, { system: 's4q' }, asAlice);
+      expect(data.value).to.match(/S4Q/);
+
+      // Daten sind im ZWEITEN Backend angekommen (getrennter Speicher).
+      const bp3After = (await GET(`${BACKEND3}/BusinessPartner`, asAlice)).data.value.length;
+      expect(bp3After - bp3Before).to.equal(2);
+
+      // Tracking weist S4Q als System aus.
+      const tracked = (await GET(`${SRV}/CreatedObjects?$filter=system eq 'S4Q'`, asAlice)).data.value;
+      expect(tracked.length).to.be.at.least(8);  // 2 Kunden x 4 Objekte
+      expect([...new Set(tracked.map(t => t.system))]).to.eql(['S4Q']);
     });
   });
 

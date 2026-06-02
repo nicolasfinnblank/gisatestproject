@@ -50,6 +50,10 @@
       "BackendAPI_2": {
         "kind": "odata",
         "model": "srv/external/BackendAPI_2"
+      },
+      "BackendAPI_3": {
+        "kind": "odata",
+        "model": "srv/external/BackendAPI_3"
       }
     }
   },

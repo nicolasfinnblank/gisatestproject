@@ -94,6 +94,50 @@ describe('GISA Master Data Generator', () => {
     });
   });
 
+  describe('Tracking der angelegten Objekte', () => {
+    // Hinweis: CreatedObjects ist eine Historie und wird (anders als GeneratorData)
+    // nicht geleert. Da sich die In-Memory-DB ueber die Suite akkumuliert, pruefen
+    // wir Zuwaechse (Deltas) statt absoluter Zaehlungen.
+    const count = async (auth) => (await GET(`${SRV}/CreatedObjects`, auth)).data.value.length;
+
+    it('protokolliert je gepushtem Kunden 4 Objekte mit System, Typ und Schluessel', async () => {
+      const before = await count(asAlice);
+      await POST(`${SRV}/generateTestCustomers`, { anzahl: 3 }, asAlice);
+      await POST(`${SRV}/pushToBackend`, {}, asAlice);
+
+      const tracked = (await GET(`${SRV}/CreatedObjects`, asAlice)).data.value;
+      // 3 Kunden x 4 Objekte (Street, City, Address, BusinessPartner)
+      expect(tracked.length - before).to.equal(12);
+
+      const types = [...new Set(tracked.map(t => t.objectType))].sort();
+      expect(types).to.eql(['Address', 'BusinessPartner', 'City', 'Street']);
+
+      for (const t of tracked) {
+        expect(t.system).to.equal('BackendAPI_2');
+        expect(t.objectKey).to.be.a('string').and.not.equal('');
+        expect(t.createdBy).to.equal('alice');
+      }
+    });
+
+    it('zeigt jedem Nutzer nur sein eigenes Tracking (Multi-User-sicher)', async () => {
+      const aliceBefore = await count(asAlice);
+      const bobBefore   = await count(asBob);
+
+      await POST(`${SRV}/generateTestCustomers`, { anzahl: 2 }, asAlice);
+      await POST(`${SRV}/pushToBackend`, {}, asAlice);
+      await POST(`${SRV}/generateTestCustomers`, { anzahl: 1 }, asBob);
+      await POST(`${SRV}/pushToBackend`, {}, asBob);
+
+      const aliceTracked = (await GET(`${SRV}/CreatedObjects`, asAlice)).data.value;
+      const bobTracked   = (await GET(`${SRV}/CreatedObjects`, asBob)).data.value;
+
+      expect(aliceTracked.length - aliceBefore).to.equal(8);  // 2 x 4
+      expect(bobTracked.length - bobBefore).to.equal(4);       // 1 x 4
+      // alice sieht ausschliesslich eigene Eintraege (bobs Push taucht nicht auf)
+      expect([...new Set(aliceTracked.map(t => t.createdBy))]).to.eql(['alice']);
+    });
+  });
+
   describe('Backend-Validierung (Mock)', () => {
     it('lehnt eine ungueltige Hausnummer ab (400)', async () => {
       const payload = {

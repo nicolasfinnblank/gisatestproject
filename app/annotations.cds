@@ -187,3 +187,50 @@ annotate GeneratorService.GeneratorData with @UI.Facets: [
   { $Type: 'UI.ReferenceFacet', ID: 'Details', Label: 'Details', Target: '@UI.FieldGroup#Details' }
 ];
 
+//
+// --- Tracking: angelegte Objekte je Zielsystem ---
+//
+annotate GeneratorService.CreatedObjects with @UI.HeaderInfo: {
+  TypeName: 'Angelegtes Objekt',
+  TypeNamePlural: 'Angelegte Objekte',
+  Title: { Value: objectType },
+  Description: { Value: objectKey }
+};
+
+annotate GeneratorService.CreatedObjects with {
+  ID             @UI.Hidden;
+  sourceConcatID @UI.Hidden  @title: 'Quelle (concatID)';
+  system         @title: 'System';
+  objectType     @title: 'Objekttyp';
+  objectKey      @title: 'Schlüssel';
+  createdBy      @title: 'Erstellt von';
+  createdAt      @title: 'Erstellt am';
+};
+
+annotate GeneratorService.CreatedObjects with @UI.LineItem: [
+  { $Type: 'UI.DataField', Value: system },
+  { $Type: 'UI.DataField', Value: objectType },
+  { $Type: 'UI.DataField', Value: objectKey },
+  { $Type: 'UI.DataField', Value: createdBy },
+  { $Type: 'UI.DataField', Value: createdAt }
+];
+
+annotate GeneratorService.CreatedObjects with @UI.SelectionFields: [
+  system, objectType, createdBy
+];
+
+annotate GeneratorService.CreatedObjects with @UI.FieldGroup #Details: {
+  $Type: 'UI.FieldGroupType', Data: [
+    { $Type: 'UI.DataField', Value: system },
+    { $Type: 'UI.DataField', Value: objectType },
+    { $Type: 'UI.DataField', Value: objectKey },
+    { $Type: 'UI.DataField', Value: sourceConcatID },
+    { $Type: 'UI.DataField', Value: createdBy },
+    { $Type: 'UI.DataField', Value: createdAt }
+  ]
+};
+
+annotate GeneratorService.CreatedObjects with @UI.Facets: [
+  { $Type: 'UI.ReferenceFacet', ID: 'Details', Label: 'Details', Target: '@UI.FieldGroup#Details' }
+];
+

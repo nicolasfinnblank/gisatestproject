@@ -18,6 +18,14 @@ service GeneratorService {
         { grant: '*', to: 'Generator', where: 'createdBy = $user' }
     ]
     entity GeneratorData as projection on my.GeneratorData;
+
+    // Tracking-Protokoll: nur lesen, und nur die eigenen Eintraege.
+    @readonly
+    @restrict: [
+        { grant: 'READ', to: 'Generator', where: 'createdBy = $user' }
+    ]
+    entity CreatedObjects as projection on my.CreatedObjects;
+
     action generateTestCustomers(anzahl : Integer) returns String;
     action pushToBackend() returns String;
 }

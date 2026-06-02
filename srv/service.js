@@ -29,11 +29,15 @@ module.exports = class GeneratorService extends cds.ApplicationService {
             }
         }
 
-        const { 
-            StreetNames, Cities, Neighborhoods, 
-            FirstNames, LastNames, PostCodes, 
-            HouseNumbers, GeneratorData 
+        const {
+            StreetNames, Cities, Neighborhoods,
+            FirstNames, LastNames, PostCodes,
+            HouseNumbers, GeneratorData, CreatedObjects
         } = this.entities;
+
+        // Kennung des Ziel-Systems. Vorerst konstant – wird im naechsten Schritt
+        // (Multi-System) durch das tatsaechlich gewaehlte Zielsystem ersetzt.
+        const TARGET_SYSTEM = 'BackendAPI_2';
 
         // --- HANDLER: Generate Test Customers ---
         this.on('generateTestCustomers', async (req) => {
@@ -106,6 +110,8 @@ module.exports = class GeneratorService extends cds.ApplicationService {
                 if (localCustomers.length === 0) return req.error(400, "Local database is empty. Generate data first.");
 
                 let pushed = 0;
+                const now = new Date().toISOString();
+                const tracked = [];
                 for (const cust of localCustomers) {
                     // IDs selbst vergeben, um die Datensaetze zu verknuepfen.
                     // Alle *Number-Felder vergibt der Server (Core.Computed) -> NICHT mitsenden.
@@ -114,11 +120,11 @@ module.exports = class GeneratorService extends cds.ApplicationService {
                     const addrId   = cds.utils.uuid();
 
                     // 1. Strasse und Stadt anlegen
-                    await backend.create('Street').entries({ ID: streetId, name: cust.streetName });
-                    await backend.create('City').entries({   ID: cityId,   name: cust.cityName });
+                    const street = await backend.create('Street').entries({ ID: streetId, name: cust.streetName });
+                    const city   = await backend.create('City').entries({   ID: cityId,   name: cust.cityName });
 
                     // 2. Adresse anlegen (verweist per ID auf Strasse + Stadt)
-                    await backend.create('Address').entries({
+                    const address = await backend.create('Address').entries({
                         ID: addrId,
                         street_ID: streetId,
                         city_ID:   cityId,
@@ -127,15 +133,30 @@ module.exports = class GeneratorService extends cds.ApplicationService {
                     });
 
                     // 3. BusinessPartner anlegen (verweist per ID auf die Adresse)
-                    await backend.create('BusinessPartner').entries({
+                    const partner = await backend.create('BusinessPartner').entries({
                         firstName:  cust.firstName,
                         surName:    cust.lastName,
                         address_ID: addrId
                     });
+
+                    // 4. Tracking: je angelegtem Objekt eine Zeile mit dem vom
+                    //    Backend vergebenen Schluessel (Fallback: unsere ID).
+                    const track = (objectType, objectKey) => tracked.push({
+                        system: TARGET_SYSTEM, objectType,
+                        objectKey: String(objectKey),
+                        sourceConcatID: cust.concatID, createdBy: owner, createdAt: now
+                    });
+                    track('Street',          street?.streetNumber          ?? streetId);
+                    track('City',            city?.cityNumber              ?? cityId);
+                    track('Address',         address?.addressNumber        ?? addrId);
+                    track('BusinessPartner', partner?.businessPartnerNumber ?? '');
                     pushed++;
                 }
 
-                console.log(`✅ Pushed ${pushed} business partners to backend.`);
+                // Tracking-Zeilen gesammelt schreiben (Historie, wird nicht geleert).
+                if (tracked.length) await INSERT.into(CreatedObjects).entries(tracked);
+
+                console.log(`✅ Pushed ${pushed} business partners to backend (${tracked.length} objects tracked).`);
                 return `Successfully pushed ${pushed} customers to backend.`;
             } catch (err) {
                 console.error('❌ Push failed:', err);

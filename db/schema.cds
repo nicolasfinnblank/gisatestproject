@@ -68,3 +68,24 @@ entity GeneratorData
     // dafuer, dass jeder Nutzer nur seine eigenen Testdaten sieht/loescht/pusht.
     createdBy : String(255);
 }
+
+// Protokoll der angelegten Entitaeten: WELCHES Objekt wurde in WELCHEM
+// SAP-System mit WELCHEM Schluessel angelegt. Wird beim Push befuellt und
+// bleibt als Historie erhalten (anders als GeneratorData, das beim erneuten
+// Generieren geleert wird). Basis fuer die spaeteren Schritte Multi-System
+// und Copy.
+entity CreatedObjects : cuid
+{
+    // Ziel-SAP-System (vorerst konstant; wird mit Multi-System parametrisiert).
+    system         : String(100);
+    // Art des angelegten Objekts: Street | City | Address | BusinessPartner.
+    objectType     : String(50);
+    // Vom Ziel-System vergebener Schluessel (z.B. businessPartnerNumber).
+    objectKey      : String(100);
+    // Verweis auf die GeneratorData-Zeile, aus der das Objekt entstand.
+    sourceConcatID : String;
+    // Wer den Push ausgeloest hat (Login-ID) – fuer Multi-User-Filterung.
+    createdBy      : String(255);
+    // Zeitpunkt des Pushs (ISO-Timestamp).
+    createdAt      : Timestamp;
+}

@@ -43,6 +43,11 @@ sap.ui.define([
       callAction("pushToBackend", {})
         .then(function (msg) { MessageToast.show(msg || "An Backend gepusht"); })
         .catch(function (e) { MessageToast.show("Fehler: " + e.message); });
+    },
+
+    // Zur Tracking-Liste (eigenstaendige FE-App unter anderer URL).
+    onShowTracking: function () {
+      window.location.href = "/tracking/webapp/index.html";
     }
   };
 });

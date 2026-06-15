@@ -245,7 +245,7 @@ module.exports = class GeneratorService extends cds.ApplicationService {
                     });
 
                     const track = (objectType, objectKey) => newTracked.push({
-                        system: tgtSys.name, objectType,
+                        system: tgtSys.name, sourceSystem: srcSys.name, objectType,
                         objectKey: String(objectKey),
                         sourceConcatID: null, createdBy: owner, createdAt: now
                     });

@@ -201,6 +201,7 @@ annotate GeneratorService.CreatedObjects with {
   ID             @UI.Hidden;
   sourceConcatID @UI.Hidden  @title: 'Quelle (concatID)';
   system         @title: 'System';
+  sourceSystem   @title: 'Kopiert aus';
   objectType     @title: 'Objekttyp';
   objectKey      @title: 'Schlüssel';
   createdBy      @title: 'Erstellt von';
@@ -209,6 +210,7 @@ annotate GeneratorService.CreatedObjects with {
 
 annotate GeneratorService.CreatedObjects with @UI.LineItem: [
   { $Type: 'UI.DataField', Value: system },
+  { $Type: 'UI.DataField', Value: sourceSystem },
   { $Type: 'UI.DataField', Value: objectType },
   { $Type: 'UI.DataField', Value: objectKey },
   { $Type: 'UI.DataField', Value: createdBy },
@@ -216,12 +218,13 @@ annotate GeneratorService.CreatedObjects with @UI.LineItem: [
 ];
 
 annotate GeneratorService.CreatedObjects with @UI.SelectionFields: [
-  system, objectType, createdBy
+  system, sourceSystem, objectType, createdBy
 ];
 
 annotate GeneratorService.CreatedObjects with @UI.FieldGroup #Details: {
   $Type: 'UI.FieldGroupType', Data: [
     { $Type: 'UI.DataField', Value: system },
+    { $Type: 'UI.DataField', Value: sourceSystem },
     { $Type: 'UI.DataField', Value: objectType },
     { $Type: 'UI.DataField', Value: objectKey },
     { $Type: 'UI.DataField', Value: sourceConcatID },

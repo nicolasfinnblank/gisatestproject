@@ -99,6 +99,9 @@ entity CreatedObjects : cuid
 {
     // Ziel-SAP-System (vorerst konstant; wird mit Multi-System parametrisiert).
     system         : String(100);
+    // Quell-SAP-System, falls dieser Eintrag durch eine Kopie entstanden ist.
+    // NULL bei normalem Push (also: Quelle = Generator selbst).
+    sourceSystem   : String(100);
     // Art des angelegten Objekts: Street | City | Address | BusinessPartner.
     objectType     : String(50);
     // Vom Ziel-System vergebener Schluessel (z.B. businessPartnerNumber).

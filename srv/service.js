@@ -132,11 +132,12 @@ module.exports = class GeneratorService extends cds.ApplicationService {
                     const city   = await backend.create('City').entries({   ID: cityId,   name: cust.cityName });
 
                     // 2. Adresse anlegen (verweist per ID auf Strasse + Stadt)
+                    const bhouse = toBackendHouseNumber(cust.houseNumber);
                     const address = await backend.create('Address').entries({
                         ID: addrId,
                         street_ID: streetId,
                         city_ID:   cityId,
-                        houseNumber: toBackendHouseNumber(cust.houseNumber),
+                        houseNumber: bhouse,
                         postalCode:  cust.postCode
                     });
 
@@ -149,15 +150,21 @@ module.exports = class GeneratorService extends cds.ApplicationService {
 
                     // 4. Tracking: je angelegtem Objekt eine Zeile mit dem vom
                     //    Backend vergebenen Schluessel (Fallback: unsere ID).
-                    const track = (objectType, objectKey) => tracked.push({
+                    const track = (objectType, objectKey, extra = {}) => tracked.push({
                         system: sys.name, objectType,
                         objectKey: String(objectKey),
-                        sourceConcatID: cust.concatID, createdBy: owner, createdAt: now
+                        sourceConcatID: cust.concatID, createdBy: owner, createdAt: now,
+                        ...extra
                     });
                     track('Street',          street?.streetNumber          ?? streetId);
                     track('City',            city?.cityNumber              ?? cityId);
                     track('Address',         address?.addressNumber        ?? addrId);
-                    track('BusinessPartner', partner?.businessPartnerNumber ?? '');
+                    // Beim BusinessPartner zusaetzlich die Stammdaten ablegen (fuer die Detailseite).
+                    track('BusinessPartner', partner?.businessPartnerNumber ?? '', {
+                        firstName: cust.firstName, lastName: cust.lastName,
+                        streetName: cust.streetName, houseNumber: bhouse,
+                        postCode: cust.postCode, cityName: cust.cityName
+                    });
                     pushed++;
                 }
 
@@ -244,15 +251,20 @@ module.exports = class GeneratorService extends cds.ApplicationService {
                         firstName: p.firstName, surName: p.surName, address_ID: addrId
                     });
 
-                    const track = (objectType, objectKey) => newTracked.push({
+                    const track = (objectType, objectKey, extra = {}) => newTracked.push({
                         system: tgtSys.name, sourceSystem: srcSys.name, objectType,
                         objectKey: String(objectKey),
-                        sourceConcatID: null, createdBy: owner, createdAt: now
+                        sourceConcatID: null, createdBy: owner, createdAt: now,
+                        ...extra
                     });
                     track('Street',          street?.streetNumber          ?? streetId);
                     track('City',            city?.cityNumber              ?? cityId);
                     track('Address',         address?.addressNumber        ?? addrId);
-                    track('BusinessPartner', partner?.businessPartnerNumber ?? '');
+                    track('BusinessPartner', partner?.businessPartnerNumber ?? '', {
+                        firstName: p.firstName, lastName: p.surName,
+                        streetName: street0.name, houseNumber: addr.houseNumber,
+                        postCode: addr.postalCode, cityName: city0.name
+                    });
                     copied++;
                 }
 

@@ -112,4 +112,12 @@ entity CreatedObjects : cuid
     createdBy      : String(255);
     // Zeitpunkt des Pushs (ISO-Timestamp).
     createdAt      : Timestamp;
+    // Beschreibende Stammdaten – nur bei objectType = 'BusinessPartner' gefuellt.
+    // Damit die Tracking-Detailseite alle Infos zum Geschaeftspartner zeigen kann.
+    firstName      : String(50);
+    lastName       : String(50);
+    streetName     : String(100);
+    houseNumber    : String(10);
+    postCode       : String(5);
+    cityName       : String(100);
 }

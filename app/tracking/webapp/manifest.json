@@ -46,28 +46,28 @@
       "routes": [
         {
           "pattern": ":?query:",
-          "name": "CreatedObjectsList",
-          "target": "CreatedObjectsList"
+          "name": "TrackedPartnersList",
+          "target": "TrackedPartnersList"
         },
         {
-          "pattern": "CreatedObjects({key}):?query:",
-          "name": "CreatedObjectsObjectPage",
-          "target": "CreatedObjectsObjectPage"
+          "pattern": "TrackedPartners({key}):?query:",
+          "name": "TrackedPartnersObjectPage",
+          "target": "TrackedPartnersObjectPage"
         }
       ],
       "targets": {
-        "CreatedObjectsList": {
+        "TrackedPartnersList": {
           "type": "Component",
-          "id": "CreatedObjectsList",
+          "id": "TrackedPartnersList",
           "name": "sap.fe.templates.ListReport",
           "options": {
             "settings": {
-              "entitySet": "CreatedObjects",
+              "entitySet": "TrackedPartners",
               "variantManagement": "None",
               "initialLoad": true,
               "navigation": {
-                "CreatedObjects": {
-                  "detail": { "route": "CreatedObjectsObjectPage" }
+                "TrackedPartners": {
+                  "detail": { "route": "TrackedPartnersObjectPage" }
                 }
               },
               "controlConfiguration": {
@@ -84,13 +84,13 @@
             }
           }
         },
-        "CreatedObjectsObjectPage": {
+        "TrackedPartnersObjectPage": {
           "type": "Component",
-          "id": "CreatedObjectsObjectPage",
+          "id": "TrackedPartnersObjectPage",
           "name": "sap.fe.templates.ObjectPage",
           "options": {
             "settings": {
-              "entitySet": "CreatedObjects"
+              "entitySet": "TrackedPartners"
             }
           }
         }

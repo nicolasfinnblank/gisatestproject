@@ -19,12 +19,35 @@ service GeneratorService {
     ]
     entity GeneratorData as projection on my.GeneratorData;
 
-    // Tracking-Protokoll: nur lesen, und nur die eigenen Eintraege.
+    // Tracking-Protokoll (vollstaendig, je angelegtem Objekt eine Zeile).
+    // Wird intern fuer Copy/Delete genutzt; nur lesen, nur die eigenen Eintraege.
     @readonly
     @restrict: [
         { grant: 'READ', to: 'Generator', where: 'createdBy = $user' }
     ]
     entity CreatedObjects as projection on my.CreatedObjects;
+
+    // Geschaeftspartner-Sicht aufs Tracking: EINE Zeile je Business Partner,
+    // mit allen Stammdaten + Zielsystem + vergebener Nummer. Basis fuer die
+    // Tracking-Oberflaeche (Liste + Detailseite).
+    @readonly
+    @restrict: [
+        { grant: 'READ', to: 'Generator', where: 'createdBy = $user' }
+    ]
+    entity TrackedPartners as select from my.CreatedObjects {
+        ID,
+        firstName,
+        lastName,
+        firstName || ' ' || lastName as name : String,
+        streetName,
+        houseNumber,
+        postCode,
+        cityName,
+        system,
+        objectKey,
+        createdBy,
+        createdAt
+    } where objectType = 'BusinessPartner';
 
     // Katalog der Ziel-Systeme: gemeinsam gepflegt (CRUD fuer Generator-Rolle).
     entity Systems as projection on my.Systems;

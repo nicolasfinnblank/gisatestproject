@@ -9,6 +9,7 @@ cds.env.requires.auth = {
     bob:     { password: 'bob',     roles: ['Generator'] },
     carol:   { password: 'carol',   roles: ['Generator'] },
     dave:    { password: 'dave',    roles: ['Generator'] },
+    erin:    { password: 'erin',    roles: ['Generator'] },
     mallory: { password: 'mallory', roles: [] }
   }
 };
@@ -21,6 +22,7 @@ const asAlice   = { auth: { username: 'alice',   password: 'alice'   } };
 const asBob     = { auth: { username: 'bob',     password: 'bob'     } };
 const asCarol   = { auth: { username: 'carol',   password: 'carol'   } };
 const asDave    = { auth: { username: 'dave',    password: 'dave'    } };
+const asErin    = { auth: { username: 'erin',    password: 'erin'    } };
 const asMallory = { auth: { username: 'mallory', password: 'mallory' } };
 
 const SRV = '/service/generator';
@@ -139,6 +141,26 @@ describe('GISA Master Data Generator', () => {
       expect(bobTracked.length - bobBefore).to.equal(4);       // 1 x 4
       // alice sieht ausschliesslich eigene Eintraege (bobs Push taucht nicht auf)
       expect([...new Set(aliceTracked.map(t => t.createdBy))]).to.eql(['alice']);
+    });
+  });
+
+  describe('Tracking-Sicht (Geschäftspartner)', () => {
+    it('zeigt einen Eintrag je Business Partner mit Name, System und Nummer', async () => {
+      await POST(`${SRV}/generateTestCustomers`, { anzahl: 2 }, asErin);
+      await POST(`${SRV}/pushToBackend`, {}, asErin);  // Default-System S4D
+
+      const partners = (await GET(`${SRV}/TrackedPartners`, asErin)).data.value;
+      // EINE Zeile je Geschaeftspartner (nicht 8 wie im flachen CreatedObjects).
+      expect(partners.length).to.equal(2);
+
+      for (const p of partners) {
+        expect(p.system).to.equal('S4D');
+        expect(p.objectKey).to.be.a('string').and.not.equal('');      // die Nummer
+        expect(p.firstName).to.be.a('string').and.not.equal('');
+        expect(p.lastName).to.be.a('string').and.not.equal('');
+        expect(p.name).to.equal(`${p.firstName} ${p.lastName}`);       // zusammengesetzter Name
+        expect(p.cityName).to.be.a('string').and.not.equal('');        // Stammdaten fuer Detailseite
+      }
     });
   });
 

@@ -10,6 +10,7 @@ cds.env.requires.auth = {
     carol:   { password: 'carol',   roles: ['Generator'] },
     dave:    { password: 'dave',    roles: ['Generator'] },
     erin:    { password: 'erin',    roles: ['Generator'] },
+    fred:    { password: 'fred',    roles: ['Generator'] },
     mallory: { password: 'mallory', roles: [] }
   }
 };
@@ -23,6 +24,7 @@ const asBob     = { auth: { username: 'bob',     password: 'bob'     } };
 const asCarol   = { auth: { username: 'carol',   password: 'carol'   } };
 const asDave    = { auth: { username: 'dave',    password: 'dave'    } };
 const asErin    = { auth: { username: 'erin',    password: 'erin'    } };
+const asFred    = { auth: { username: 'fred',    password: 'fred'    } };
 const asMallory = { auth: { username: 'mallory', password: 'mallory' } };
 
 const SRV = '/service/generator';
@@ -144,22 +146,38 @@ describe('GISA Master Data Generator', () => {
     });
   });
 
-  describe('Tracking-Sicht (Geschäftspartner)', () => {
-    it('zeigt einen Eintrag je Business Partner mit Name, System und Nummer', async () => {
+  describe('Tracking-Sicht (Geschäftspartner, 1:n)', () => {
+    it('zeigt einen Eintrag je Geschäftspartner mit Stammdaten + System-Tabelle', async () => {
       await POST(`${SRV}/generateTestCustomers`, { anzahl: 2 }, asErin);
       await POST(`${SRV}/pushToBackend`, {}, asErin);  // Default-System S4D
 
-      const partners = (await GET(`${SRV}/TrackedPartners`, asErin)).data.value;
+      const partners = (await GET(`${SRV}/TrackedPartners?$expand=systems`, asErin)).data.value;
       // EINE Zeile je Geschaeftspartner (nicht 8 wie im flachen CreatedObjects).
       expect(partners.length).to.equal(2);
 
       for (const p of partners) {
-        expect(p.system).to.equal('S4D');
-        expect(p.objectKey).to.be.a('string').and.not.equal('');      // die Nummer
         expect(p.firstName).to.be.a('string').and.not.equal('');
-        expect(p.lastName).to.be.a('string').and.not.equal('');
-        expect(p.name).to.equal(`${p.firstName} ${p.lastName}`);       // zusammengesetzter Name
-        expect(p.cityName).to.be.a('string').and.not.equal('');        // Stammdaten fuer Detailseite
+        expect(p.name).to.equal(`${p.firstName} ${p.lastName}`);   // zusammengesetzter Name
+        expect(p.cityName).to.be.a('string').and.not.equal('');    // Stammdaten fuer Detailseite
+        // 1 Push -> genau ein System-Eintrag (child) mit Nummer
+        expect(p.systems.length).to.equal(1);
+        expect(p.systems[0].system).to.equal('S4D');
+        expect(p.systems[0].objectKey).to.be.a('string').and.not.equal('');
+      }
+    });
+
+    it('derselbe Partner in mehreren Systemen erscheint als EIN Eintrag (1:n)', async () => {
+      await POST(`${SRV}/generateTestCustomers`, { anzahl: 2 }, asFred);
+      // Mehrfach-Push: beide Systeme auf einmal.
+      await POST(`${SRV}/pushToBackend`, { systems: ['s4d', 's4q'] }, asFred);
+
+      const partners = (await GET(`${SRV}/TrackedPartners?$expand=systems`, asFred)).data.value;
+      // Trotz Push in 2 Systeme nur 2 Personen (nicht 4).
+      expect(partners.length).to.equal(2);
+      for (const p of partners) {
+        const systems = p.systems.map(s => s.system).sort();
+        expect(systems).to.eql(['S4D', 'S4Q']);   // jede Person liegt in BEIDEN Systemen
+        expect(p.systems.every(s => s.objectKey && s.objectKey !== '')).to.equal(true);
       }
     });
   });
@@ -179,7 +197,7 @@ describe('GISA Master Data Generator', () => {
       const bp3Before = (await GET(`${BACKEND3}/BusinessPartner`, asAlice)).data.value.length;
 
       await POST(`${SRV}/generateTestCustomers`, { anzahl: 2 }, asAlice);
-      const { data } = await POST(`${SRV}/pushToBackend`, { system: 's4q' }, asAlice);
+      const { data } = await POST(`${SRV}/pushToBackend`, { systems: ['s4q'] }, asAlice);
       expect(data.value).to.match(/S4Q/);
 
       // Daten sind im ZWEITEN Backend angekommen (getrennter Speicher).

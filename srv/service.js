@@ -97,82 +97,90 @@ module.exports = class GeneratorService extends cds.ApplicationService {
         // --- HANDLER: Push to Backend ---
         this.on('pushToBackend', async (req) => {
             try {
-                // Zielsystem bestimmen: explizit gewaehlt (req.data.system = Systems.ID)
-                // oder das als Default markierte System.
-                const sys = req.data.system
-                    ? await SELECT.one.from(Systems).where({ ID: req.data.system })
-                    : await SELECT.one.from(Systems).where({ isDefault: true });
-                if (!sys) {
-                    return req.error(400, req.data.system
-                        ? `Unbekanntes Zielsystem '${req.data.system}'.`
+                // Zielsysteme bestimmen: gewaehlte (Mehrfachauswahl, req.data.systems
+                // = Liste von Systems.ID) oder das als Default markierte System.
+                let ids = req.data.systems;
+                if (!Array.isArray(ids)) ids = ids ? [ids] : [];
+                const targets = ids.length
+                    ? await SELECT.from(Systems).where({ ID: { in: ids } })
+                    : await SELECT.from(Systems).where({ isDefault: true });
+                if (!targets.length) {
+                    return req.error(400, ids.length
+                        ? 'Unbekannte Zielsysteme.'
                         : 'Kein Default-Zielsystem konfiguriert.');
                 }
-
-                // Verbindung zum Backend-Service des Zielsystems (lokal gemockt
-                // bzw. in Produktion die echte S/4-Destination).
-                const backend = await cds.connect.to(sys.serviceName);
 
                 // Nur die EIGENEN generierten Zeilen pushen (Multi-User-sicher)
                 const owner = req.user.id || 'anonymous';
                 const localCustomers = await SELECT.from(GeneratorData).where({ createdBy: owner });
                 if (localCustomers.length === 0) return req.error(400, "Keine generierten Daten vorhanden. Bitte zuerst generieren.");
 
-                let pushed = 0;
                 const now = new Date().toISOString();
                 const tracked = [];
-                for (const cust of localCustomers) {
-                    // IDs selbst vergeben, um die Datensaetze zu verknuepfen.
-                    // Alle *Number-Felder vergibt der Server (Core.Computed) -> NICHT mitsenden.
-                    const streetId = cds.utils.uuid();
-                    const cityId   = cds.utils.uuid();
-                    const addrId   = cds.utils.uuid();
+                // Hausnummer je Person EINMAL festlegen (sie bekommt einen zufaelligen
+                // Buchstaben). So hat dieselbe Person in allen Systemen dieselbe Adresse
+                // und wird im Tracking als EIN Eintrag zusammengefasst.
+                const houseByCust = new Map(
+                    localCustomers.map(c => [c.concatID, toBackendHouseNumber(c.houseNumber)])
+                );
+                // Fuer JEDES gewaehlte Zielsystem alle Datensaetze anlegen + protokollieren.
+                for (const sys of targets) {
+                    const backend = await cds.connect.to(sys.serviceName);
+                    for (const cust of localCustomers) {
+                        // IDs selbst vergeben, um die Datensaetze zu verknuepfen.
+                        // Alle *Number-Felder vergibt der Server (Core.Computed) -> NICHT mitsenden.
+                        const streetId = cds.utils.uuid();
+                        const cityId   = cds.utils.uuid();
+                        const addrId   = cds.utils.uuid();
 
-                    // 1. Strasse und Stadt anlegen
-                    const street = await backend.create('Street').entries({ ID: streetId, name: cust.streetName });
-                    const city   = await backend.create('City').entries({   ID: cityId,   name: cust.cityName });
+                        // 1. Strasse und Stadt anlegen
+                        const street = await backend.create('Street').entries({ ID: streetId, name: cust.streetName });
+                        const city   = await backend.create('City').entries({   ID: cityId,   name: cust.cityName });
 
-                    // 2. Adresse anlegen (verweist per ID auf Strasse + Stadt)
-                    const bhouse = toBackendHouseNumber(cust.houseNumber);
-                    const address = await backend.create('Address').entries({
-                        ID: addrId,
-                        street_ID: streetId,
-                        city_ID:   cityId,
-                        houseNumber: bhouse,
-                        postalCode:  cust.postCode
-                    });
+                        // 2. Adresse anlegen (verweist per ID auf Strasse + Stadt)
+                        const bhouse = houseByCust.get(cust.concatID);
+                        const address = await backend.create('Address').entries({
+                            ID: addrId,
+                            street_ID: streetId,
+                            city_ID:   cityId,
+                            houseNumber: bhouse,
+                            postalCode:  cust.postCode
+                        });
 
-                    // 3. BusinessPartner anlegen (verweist per ID auf die Adresse)
-                    const partner = await backend.create('BusinessPartner').entries({
-                        firstName:  cust.firstName,
-                        surName:    cust.lastName,
-                        address_ID: addrId
-                    });
+                        // 3. BusinessPartner anlegen (verweist per ID auf die Adresse)
+                        const partner = await backend.create('BusinessPartner').entries({
+                            firstName:  cust.firstName,
+                            surName:    cust.lastName,
+                            address_ID: addrId
+                        });
 
-                    // 4. Tracking: je angelegtem Objekt eine Zeile mit dem vom
-                    //    Backend vergebenen Schluessel (Fallback: unsere ID).
-                    const track = (objectType, objectKey, extra = {}) => tracked.push({
-                        system: sys.name, objectType,
-                        objectKey: String(objectKey),
-                        sourceConcatID: cust.concatID, createdBy: owner, createdAt: now,
-                        ...extra
-                    });
-                    track('Street',          street?.streetNumber          ?? streetId);
-                    track('City',            city?.cityNumber              ?? cityId);
-                    track('Address',         address?.addressNumber        ?? addrId);
-                    // Beim BusinessPartner zusaetzlich die Stammdaten ablegen (fuer die Detailseite).
-                    track('BusinessPartner', partner?.businessPartnerNumber ?? '', {
-                        firstName: cust.firstName, lastName: cust.lastName,
-                        streetName: cust.streetName, houseNumber: bhouse,
-                        postCode: cust.postCode, cityName: cust.cityName
-                    });
-                    pushed++;
+                        // 4. Tracking: je angelegtem Objekt eine Zeile. sourceConcatID
+                        //    verknuepft alle Systeme derselben Person (1:n).
+                        const track = (objectType, objectKey, extra = {}) => tracked.push({
+                            system: sys.name, objectType,
+                            objectKey: String(objectKey),
+                            sourceConcatID: cust.concatID, createdBy: owner, createdAt: now,
+                            ...extra
+                        });
+                        track('Street',          street?.streetNumber          ?? streetId);
+                        track('City',            city?.cityNumber              ?? cityId);
+                        track('Address',         address?.addressNumber        ?? addrId);
+                        // Beim BusinessPartner zusaetzlich die Stammdaten ablegen (fuer die Detailseite).
+                        track('BusinessPartner', partner?.businessPartnerNumber ?? '', {
+                            firstName: cust.firstName, lastName: cust.lastName,
+                            streetName: cust.streetName, houseNumber: bhouse,
+                            postCode: cust.postCode, cityName: cust.cityName
+                        });
+                    }
                 }
 
                 // Tracking-Zeilen gesammelt schreiben (Historie, wird nicht geleert).
                 if (tracked.length) await INSERT.into(CreatedObjects).entries(tracked);
 
-                console.log(`✅ ${pushed} Business Partner nach ${sys.name} übertragen (${tracked.length} Objekte protokolliert).`);
-                return `Erfolgreich ${pushed} Kunden nach ${sys.name} übertragen.`;
+                const names = targets.map(s => s.name).join(', ');
+                const perSystem = localCustomers.length;
+                console.log(`✅ ${perSystem} Business Partner nach ${names} übertragen (${tracked.length} Objekte protokolliert).`);
+                return `Erfolgreich ${perSystem} Kunden nach ${names} übertragen.`;
             } catch (err) {
                 console.error('❌ Übertragung fehlgeschlagen:', err);
                 return req.error(500, `Übertragung fehlgeschlagen: ${err.message}`);
@@ -208,6 +216,11 @@ module.exports = class GeneratorService extends cds.ApplicationService {
                     return req.error(400, `Im System ${srcSys.name} hast du keine Business Partner angelegt.`);
                 }
                 const keys = trackedBPs.map(t => Number(t.objectKey)).filter(n => !Number.isNaN(n));
+                // Quell-Nummer -> Herkunft (sourceConcatID): damit die Kopie unter
+                // derselben Person gruppiert (eine Person, mehrere Systeme = 1:n).
+                const concatByNum = Object.fromEntries(
+                    trackedBPs.map(t => [String(t.objectKey), t.sourceConcatID])
+                );
 
                 // Die vollstaendigen Datensaetze aus dem Quell-Backend lesen.
                 // Flach in Schritten (statt tiefem $expand, das der OData-Mock
@@ -240,6 +253,7 @@ module.exports = class GeneratorService extends cds.ApplicationService {
                     const streetId = cds.utils.uuid();
                     const cityId   = cds.utils.uuid();
                     const addrId   = cds.utils.uuid();
+                    const pConcat  = concatByNum[String(p.businessPartnerNumber)] ?? null;
 
                     const street = await target.create('Street').entries({ ID: streetId, name: street0.name });
                     const city   = await target.create('City').entries({   ID: cityId,   name: city0.name });
@@ -254,7 +268,7 @@ module.exports = class GeneratorService extends cds.ApplicationService {
                     const track = (objectType, objectKey, extra = {}) => newTracked.push({
                         system: tgtSys.name, sourceSystem: srcSys.name, objectType,
                         objectKey: String(objectKey),
-                        sourceConcatID: null, createdBy: owner, createdAt: now,
+                        sourceConcatID: pConcat, createdBy: owner, createdAt: now,
                         ...extra
                     });
                     track('Street',          street?.streetNumber          ?? streetId);

@@ -3,10 +3,11 @@ sap.ui.define([
   "sap/m/Dialog",
   "sap/m/Button",
   "sap/m/Select",
+  "sap/m/MultiComboBox",
   "sap/ui/core/Item",
   "sap/m/Label",
   "sap/m/VBox"
-], function (MessageToast, Dialog, Button, Select, Item, Label, VBox) {
+], function (MessageToast, Dialog, Button, Select, MultiComboBox, Item, Label, VBox) {
   "use strict";
 
   // Ruft eine unbound OData-Action des Generator-Service auf.
@@ -52,7 +53,7 @@ sap.ui.define([
         .catch(function (e) { MessageToast.show("Fehler: " + e.message); });
     },
 
-    // Push: Zielsystem in einem Dialog waehlen, dann pushToBackend(system) rufen.
+    // Push: ein ODER MEHRERE Zielsysteme waehlen, dann pushToBackend(systems) rufen.
     onPush: function () {
       loadSystems().then(function (aSystems) {
         if (!aSystems.length) {
@@ -60,28 +61,29 @@ sap.ui.define([
           return;
         }
 
-        const oSelect = new Select({ width: "100%" });
+        const oBox = new MultiComboBox({ width: "100%" });
         aSystems.forEach(function (s) {
-          oSelect.addItem(new Item({
+          oBox.addItem(new Item({
             key: s.ID,
             text: s.name + (s.description ? " – " + s.description : "") + (s.isDefault ? " (Standard)" : "")
           }));
         });
         const oDefault = aSystems.find(function (s) { return s.isDefault; });
-        if (oDefault) { oSelect.setSelectedKey(oDefault.ID); }
+        if (oDefault) { oBox.setSelectedKeys([oDefault.ID]); }
 
         const oDialog = new Dialog({
-          title: "An SAP-System pushen",
+          title: "An SAP-System(e) pushen",
           content: new VBox({
-            items: [ new Label({ text: "Zielsystem:", labelFor: oSelect }), oSelect ]
+            items: [ new Label({ text: "Zielsysteme (Mehrfachauswahl):", labelFor: oBox }), oBox ]
           }).addStyleClass("sapUiContentPadding"),
           beginButton: new Button({
             text: "Pushen",
             type: "Emphasized",
             press: function () {
-              const sId = oSelect.getSelectedKey();
+              const aIds = oBox.getSelectedKeys();
+              if (!aIds.length) { MessageToast.show("Bitte mindestens ein Zielsystem wählen."); return; }
               oDialog.close();
-              callAction("pushToBackend", { system: sId })
+              callAction("pushToBackend", { systems: aIds })
                 .then(function (msg) { MessageToast.show(msg || "Gepusht"); })
                 .catch(function (e) { MessageToast.show("Fehler: " + e.message); });
             }

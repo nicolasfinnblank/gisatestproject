@@ -188,13 +188,13 @@ annotate GeneratorService.GeneratorData with @UI.Facets: [
 ];
 
 //
-// --- Tracking: angelegte Geschaeftspartner (eine Zeile je BP) ---
+// --- Tracking: Geschaeftspartner (PARENT) + Systeme (CHILD), 1:n ---
 //
 annotate GeneratorService.TrackedPartners with @UI.HeaderInfo: {
   TypeName: 'Geschäftspartner',
   TypeNamePlural: 'Angelegte Geschäftspartner',
   Title: { Value: name },
-  Description: { Value: objectKey }
+  Description: { Value: cityName }
 };
 
 annotate GeneratorService.TrackedPartners with {
@@ -206,23 +206,22 @@ annotate GeneratorService.TrackedPartners with {
   houseNumber @title: 'Hausnummer';
   postCode    @title: 'PLZ';
   cityName    @title: 'Stadt';
-  system      @title: 'System';
-  objectKey   @title: 'Nummer';
   createdBy   @UI.Hidden  @title: 'Erstellt von';
-  createdAt   @title: 'Erstellt am';
 };
 
+// Liste: EINE Zeile je Person (System/Nummer steht auf der Detailseite).
 annotate GeneratorService.TrackedPartners with @UI.LineItem: [
   { $Type: 'UI.DataField', Value: name },
-  { $Type: 'UI.DataField', Value: system },
-  { $Type: 'UI.DataField', Value: objectKey }
+  { $Type: 'UI.DataField', Value: streetName },
+  { $Type: 'UI.DataField', Value: postCode },
+  { $Type: 'UI.DataField', Value: cityName }
 ];
 
 annotate GeneratorService.TrackedPartners with @UI.SelectionFields: [
-  lastName, system
+  lastName, cityName
 ];
 
-// Detailseite: oben alle Stammdaten des Partners, darunter System + Nummer.
+// Detailseite: oben die Stammdaten, darunter die Tabelle ALLER Systeme (1:n).
 annotate GeneratorService.TrackedPartners with @UI.FieldGroup #Partner: {
   $Type: 'UI.FieldGroupType', Data: [
     { $Type: 'UI.DataField', Value: firstName },
@@ -234,17 +233,22 @@ annotate GeneratorService.TrackedPartners with @UI.FieldGroup #Partner: {
   ]
 };
 
-annotate GeneratorService.TrackedPartners with @UI.FieldGroup #Tracking: {
-  $Type: 'UI.FieldGroupType', Data: [
-    { $Type: 'UI.DataField', Value: system },
-    { $Type: 'UI.DataField', Value: objectKey },
-    { $Type: 'UI.DataField', Value: createdAt }
-  ]
+annotate GeneratorService.TrackedPartners with @UI.Facets: [
+  { $Type: 'UI.ReferenceFacet', ID: 'Partner', Label: 'Geschäftspartner', Target: '@UI.FieldGroup#Partner' },
+  { $Type: 'UI.ReferenceFacet', ID: 'Systeme', Label: 'Systeme',          Target: 'systems/@UI.LineItem' }
+];
+
+// CHILD: je System eine Zeile (System + dort vergebene Nummer).
+annotate GeneratorService.PartnerSystems with {
+  system    @title: 'System';
+  objectKey @title: 'Nummer';
+  createdAt @title: 'Angelegt am';
 };
 
-annotate GeneratorService.TrackedPartners with @UI.Facets: [
-  { $Type: 'UI.ReferenceFacet', ID: 'Partner',  Label: 'Geschäftspartner', Target: '@UI.FieldGroup#Partner' },
-  { $Type: 'UI.ReferenceFacet', ID: 'Tracking', Label: 'System & Nummer',  Target: '@UI.FieldGroup#Tracking' }
+annotate GeneratorService.PartnerSystems with @UI.LineItem: [
+  { $Type: 'UI.DataField', Value: system },
+  { $Type: 'UI.DataField', Value: objectKey },
+  { $Type: 'UI.DataField', Value: createdAt }
 ];
 
 //

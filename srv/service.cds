@@ -27,15 +27,15 @@ service GeneratorService {
     ]
     entity CreatedObjects as projection on my.CreatedObjects;
 
-    // Geschaeftspartner-Sicht aufs Tracking: EINE Zeile je Business Partner,
-    // mit allen Stammdaten + Zielsystem + vergebener Nummer. Basis fuer die
-    // Tracking-Oberflaeche (Liste + Detailseite).
+    // Geschaeftspartner-Sicht (PARENT): EINE Zeile je Person, unabhaengig vom
+    // System. Gleiche Personen (gleiche Herkunft sourceConcatID) werden zu
+    // einem Eintrag zusammengefasst. 1:n zu den System-Platzierungen.
     @readonly
     @restrict: [
         { grant: 'READ', to: 'Generator', where: 'createdBy = $user' }
     ]
     entity TrackedPartners as select from my.CreatedObjects {
-        ID,
+        key sourceConcatID as ID,
         firstName,
         lastName,
         firstName || ' ' || lastName as name : String,
@@ -43,18 +43,33 @@ service GeneratorService {
         houseNumber,
         postCode,
         cityName,
+        createdBy,
+        systems : Association to many PartnerSystems on systems.partner_ID = $self.ID
+    } where objectType = 'BusinessPartner'
+    group by sourceConcatID, firstName, lastName, streetName, houseNumber, postCode, cityName, createdBy;
+
+    // System-Platzierungen (CHILD): je (Person, System) ein Eintrag mit der
+    // dort vom Backend vergebenen Nummer. Wird auf der Detailseite als Tabelle
+    // gezeigt (alle Systeme, in denen der Partner liegt).
+    @readonly
+    @restrict: [
+        { grant: 'READ', to: 'Generator', where: 'createdBy = $user' }
+    ]
+    entity PartnerSystems as projection on my.CreatedObjects {
+        key ID,
+        sourceConcatID as partner_ID,
         system,
         objectKey,
-        createdBy,
-        createdAt
+        createdAt,
+        createdBy
     } where objectType = 'BusinessPartner';
 
     // Katalog der Ziel-Systeme: gemeinsam gepflegt (CRUD fuer Generator-Rolle).
     entity Systems as projection on my.Systems;
 
     action generateTestCustomers(anzahl : Integer) returns String;
-    // system: ID eines Eintrags aus Systems. Leer -> Default-System.
-    action pushToBackend(system : String) returns String;
+    // systems: IDs aus Systems (Mehrfachauswahl). Leer -> Default-System.
+    action pushToBackend(systems : many String) returns String;
     // Kopiert die vom Nutzer im Quellsystem angelegten Business Partner
     // (inkl. Adresse) in das Zielsystem. sourceSystem/targetSystem = Systems.ID.
     action copyData(sourceSystem : String, targetSystem : String) returns String;

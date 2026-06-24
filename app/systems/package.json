@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "build": "ui5 build --dest dist --clean-dest"
+    "build": "ui5 build --dest dist --clean-dest && cp xs-app.json dist/ && rm -rf out && mkdir out && cd dist && zip -qr ../out/systems.zip . && cd .."
   },
   "devDependencies": {
     "@ui5/cli": "^4"

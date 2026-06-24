@@ -78,7 +78,7 @@ modules:
     type: html5
     path: app/generator
     build-parameters:
-      build-result: dist
+      build-result: out
       builder: custom
       commands:
         - npm install
@@ -89,7 +89,7 @@ modules:
     type: html5
     path: app/systems
     build-parameters:
-      build-result: dist
+      build-result: out
       builder: custom
       commands:
         - npm install
@@ -100,7 +100,7 @@ modules:
     type: html5
     path: app/tracking
     build-parameters:
-      build-result: dist
+      build-result: out
       builder: custom
       commands:
         - npm install

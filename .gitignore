@@ -29,3 +29,5 @@ mta_archives/
 build/ui-deployer/
 build/dist/
 env/
+# alte App-Zips (Build-Output)
+app/*/*.zip

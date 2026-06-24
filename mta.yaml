@@ -1,0 +1,179 @@
+_schema-version: 3.3.0
+ID: gisa-master-data-generator
+version: 1.0.0
+description: "A simple CAP project."
+parameters:
+  enable-parallel-deployments: true
+  deploy_mode: html5-repo
+build-parameters:
+  before-all:
+    - builder: custom
+      commands:
+        - npm ci
+        - npx cds build --production
+modules:
+  - name: gisa-master-data-generator-srv
+    type: nodejs
+    path: gen/srv
+    parameters:
+      instances: 1
+      buildpack: nodejs_buildpack
+    build-parameters:
+      builder: npm-ci
+    provides:
+      - name: srv-api # required by consumers of CAP services (e.g. approuter)
+        properties:
+          srv-url: ${default-url}
+    requires:
+      - name: gisa-master-data-generator-auth
+      - name: gisa-master-data-generator-db
+      - name: gisa-master-data-generator-destination
+
+  - name: gisa-master-data-generator-db-deployer
+    type: hdb
+    path: gen/db
+    parameters:
+      buildpack: nodejs_buildpack
+    requires:
+      - name: gisa-master-data-generator-db
+
+  - name: gisa-master-data-generator-app-deployer
+    type: com.sap.application.content
+    path: gen
+    build-parameters:
+      build-result: app/
+      requires:
+        - name: gisamasterdatageneratorgenerator
+          artifacts:
+            - generator.zip
+          target-path: app/
+        - name: gisamasterdatageneratorsystems
+          artifacts:
+            - systems.zip
+          target-path: app/
+        - name: gisamasterdatageneratortracking
+          artifacts:
+            - tracking.zip
+          target-path: app/
+    requires:
+      - name: gisa-master-data-generator-auth
+      - name: srv-api
+      - name: gisa-master-data-generator-html5-repo-host
+        parameters:
+          content-target: true
+          config:
+            HTML5Runtime_enabled: true
+    parameters:
+      config:
+        destinations:
+          - Name: srv-api
+            URL: ~{srv-api/srv-url}
+            Authentication: NoAuthentication
+            Type: HTTP
+            ProxyType: Internet
+            HTML5.ForwardAuthToken: true
+            HTML5.DynamicDestination: true
+
+  - name: gisamasterdatageneratorgenerator
+    type: html5
+    path: app/generator
+    build-parameters:
+      build-result: dist
+      builder: custom
+      commands:
+        - npm install
+        - npm run build
+      supported-platforms:
+        []
+  - name: gisamasterdatageneratorsystems
+    type: html5
+    path: app/systems
+    build-parameters:
+      build-result: dist
+      builder: custom
+      commands:
+        - npm install
+        - npm run build
+      supported-platforms:
+        []
+  - name: gisamasterdatageneratortracking
+    type: html5
+    path: app/tracking
+    build-parameters:
+      build-result: dist
+      builder: custom
+      commands:
+        - npm install
+        - npm run build
+      supported-platforms:
+        []
+
+  - name: gisa-master-data-generator-destinations
+    type: com.sap.application.content
+    requires:
+      - name: gisa-master-data-generator-auth
+        parameters:
+          service-key:
+            name: gisa-master-data-generator-auth-key
+      - name: gisa-master-data-generator-html5-repo-host
+        parameters:
+          service-key:
+            name: gisa-master-data-generator-html5-repo-host-key
+      - name: srv-api
+      - name: gisa-master-data-generator-destination
+        parameters:
+          content-target: true
+    build-parameters:
+      no-source: true
+    parameters:
+      content:
+        instance:
+          existing_destinations_policy: update
+          destinations:
+            - Name: gisa-master-data-generator-html5-repository
+              ServiceInstanceName: gisa-master-data-generator-html5-repo-host
+              ServiceKeyName: gisa-master-data-generator-html5-repo-host-key
+              sap.cloud.service: gisamasterdatagenerator.service
+            - Name: gisa-master-data-generator-auth
+              Authentication: OAuth2UserTokenExchange
+              ServiceInstanceName: gisa-master-data-generator-auth
+              ServiceKeyName: gisa-master-data-generator-auth-key
+              sap.cloud.service: gisamasterdatagenerator.service
+
+resources:
+  - name: gisa-master-data-generator-auth
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: xsuaa
+      service-plan: application
+      path: ./xs-security.json
+      config:
+        xsappname: gisa-master-data-generator-${org}-${space}
+        tenant-mode: dedicated
+        oauth2-configuration:
+          credential-types:
+            - "binding-secret"
+            - "x509"
+        role-collections:
+          - name: 'Generator (gisa-master-data-generator ${org}-${space})'
+            description: 'generated'
+            role-template-references:
+              - '$XSAPPNAME.Generator'
+  - name: gisa-master-data-generator-db
+    type: com.sap.xs.hdi-container
+    parameters:
+      service: hana
+      service-plan: hdi-shared
+  - name: gisa-master-data-generator-destination
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: destination
+      service-plan: lite
+    requires:
+      - name: srv-api
+
+  - name: gisa-master-data-generator-html5-repo-host
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: html5-apps-repo
+      service-plan: app-host

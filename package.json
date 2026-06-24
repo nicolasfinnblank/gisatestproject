@@ -9,13 +9,14 @@
     "@sap-cloud-sdk/util": "^4.6.0",
     "@sap/cds": "^9",
     "@sap/xsenv": ">=3.3.2 <3.3.3",
-    "@sap/xssec": "^4.13.0",
+    "@sap/xssec": "^4",
     "hdb": "^2.27.1",
     "passport": "^0.7.0"
   },
   "devDependencies": {
     "@cap-js/cds-test": "^1.0.1",
     "@cap-js/sqlite": "^2",
+    "@sap/cds-dk": "^9",
     "jest": "^30.4.2"
   },
   "scripts": {
@@ -50,7 +51,15 @@
       "BackendAPI_3": {
         "kind": "odata",
         "model": "srv/external/BackendAPI_3"
-      }
+      },
+      "[production]": {
+        "auth": {
+          "kind": "xsuaa"
+        }
+      },
+      "destinations": true,
+      "html5-repo": true,
+      "workzone": true
     }
   }
 }

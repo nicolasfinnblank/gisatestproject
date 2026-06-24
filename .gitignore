@@ -3,6 +3,10 @@ target/
 _out/
 gen/
 
+# Fiori-App-Build-Output (wird beim Deploy erzeugt)
+app/*/dist/
+app/*/package-lock.json
+
 .cdsrc-private.json
 default-*.json
 *.sqlite

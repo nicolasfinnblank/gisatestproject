@@ -6,7 +6,9 @@
     "i18n": "i18n/i18n.properties",
     "title": "{{appTitle}}",
     "description": "{{appDescription}}",
-    "applicationVersion": { "version": "1.0.0" },
+    "applicationVersion": {
+      "version": "1.0.0"
+    },
     "dataSources": {
       "mainService": {
         "uri": "/service/generator/",
@@ -15,11 +17,27 @@
           "odataVersion": "4.0"
         }
       }
+    },
+    "crossNavigation": {
+      "inbounds": {
+        "tracking-display": {
+          "semanticObject": "tracking",
+          "action": "display",
+          "signature": {
+            "parameters": {},
+            "additionalParameters": "allowed"
+          }
+        }
+      }
     }
   },
   "sap.ui": {
     "technology": "UI5",
-    "deviceTypes": { "desktop": true, "tablet": true, "phone": true }
+    "deviceTypes": {
+      "desktop": true,
+      "tablet": true,
+      "phone": true
+    }
   },
   "sap.ui5": {
     "dependencies": {
@@ -31,7 +49,10 @@
     "models": {
       "i18n": {
         "type": "sap.ui.model.resource.ResourceModel",
-        "settings": { "bundleName": "gisamdg.systems.i18n.i18n", "async": true }
+        "settings": {
+          "bundleName": "gisamdg.systems.i18n.i18n",
+          "async": true
+        }
       },
       "": {
         "dataSource": "mainService",
@@ -67,7 +88,9 @@
               "initialLoad": true,
               "navigation": {
                 "Systems": {
-                  "detail": { "route": "SystemsObjectPage" }
+                  "detail": {
+                    "route": "SystemsObjectPage"
+                  }
                 }
               },
               "controlConfiguration": {
@@ -101,5 +124,9 @@
         }
       }
     }
+  },
+  "sap.cloud": {
+    "public": true,
+    "service": "gisamasterdatagenerator.service"
   }
 }

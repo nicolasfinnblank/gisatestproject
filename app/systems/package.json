@@ -1,0 +1,11 @@
+{
+  "name": "gisamdg-systems",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "ui5 build --dest dist --clean-dest"
+  },
+  "devDependencies": {
+    "@ui5/cli": "^4"
+  }
+}

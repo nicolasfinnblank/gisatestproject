@@ -37,7 +37,8 @@ zwischen Systemen kopieren und im System wieder löschen.
 | `app/generator/webapp/` | UI 1: Daten generieren + alle Aktionen |
 | `app/tracking/webapp/` | UI 2: Protokoll der angelegten Objekte |
 | `app/systems/webapp/` | UI 3: Zielsysteme verwalten |
-| `test/integration.test.js` | Integrationstests (17) |
+| `test/integration.test.js` | Integrationstests (19) |
+| `mta.yaml` | Deployment-Beschreibung für SAP BTP (Backend, DB, Fiori-Apps) |
 
 ## Lokale Entwicklung
 
@@ -63,7 +64,7 @@ Die Oberflächen sind erreichbar unter:
 ## Tests
 
 ```bash
-npm test           # 17 Integrationstests (jest + cds.test)
+npm test           # 19 Integrationstests (jest + cds.test)
 ```
 
 Geprüft werden u. a. Authentifizierung/Rollen, Mehrbenutzer-Isolation,
@@ -76,10 +77,36 @@ Generieren, Push ins richtige System, Copy und Delete.
 | **Entwicklung** | SQLite (`db.sqlite`) | dummy | lokale Mocks |
 | **Produktion** | SAP HANA | XSUAA | echte S/4HANA-Systeme (per Destination) |
 
+## Deployment auf SAP BTP
+
+Das Projekt ist als MTA (`mta.yaml`) beschrieben und wird in einen Cloud-Foundry-
+Space deployt. Bauen und ausrollen:
+
+```bash
+npm install                                              # Lockfile synchron halten
+npx mbt build                                            # erzeugt mta_archives/*.mtar
+cf deploy mta_archives/gisa-master-data-generator_1.0.0.mtar -f
+```
+
+Bestandteile: `srv` (CAP-Service, Node.js), `db-deployer` (HANA-Schema),
+`app-deployer` (lädt die drei Fiori-Apps ins HTML5-Repository) sowie die
+Ressourcen XSUAA, HANA (hdi-shared), Destination und HTML5-Repo-Host.
+
+**Stand:** Backend und Datenbank laufen auf BTP; der Service antwortet auf
+`/service/generator/` mit HTTP 401 (erreichbar und korrekt geschützt).
+
+**Offen – Zugang zu den Oberflächen:** Die drei Fiori-Apps liegen im
+HTML5-Repository, es fehlt aber die Komponente, die sie ausliefert. Geplant ist
+SAP Build Work Zone (Launchpad mit Kacheln). Work Zone setzt inzwischen zwingend
+eine Anmeldung über SAP Cloud Identity Services (IAS) per OpenID Connect voraus
+(siehe SAP-Hinweis KBA 3600432); die reine SAML-Anmeldung genügt nicht mehr.
+Im BTP-Trial ist der IAS-Tenant zudem nur 14 Tage gültig. Alternative ohne
+IAS-Abhängigkeit wäre ein Standalone-Approuter — dann allerdings ohne Kacheln.
+
 ## Dokumentation
 
-Eine ausführliche, einsteigerfreundliche Erklärung des gesamten Projekts liegt
-als PDF bei: [`GISA-Projekt-Erklaerung.pdf`](GISA-Projekt-Erklaerung.pdf).
+Ein ausführliches Stand-Dokument für die Weiterarbeit (Architektur, verifizierte
+Funktionen, bekannte Stolperfallen) liegt unter [`HANDOFF.md`](HANDOFF.md).
 
 ## Mehr zu CAP
 

@@ -18,7 +18,7 @@ GISA. Lokal SQLite, in Prod HANA. Fiori Elements UI. Aufgabenstellung als PDF
 - Starten: `cds watch` → http://localhost:4004
 - FE-Apps: `/generator/webapp/index.html`, `/tracking/webapp/index.html`,
   `/systems/webapp/index.html`
-- Tests: `npm test` (17 Integrationstests, jest + cds.test)
+- Tests: `npm test` (19 Integrationstests, jest + cds.test)
 
 ## Git-Stand
 - `main` = Original (unberührt), auf GitHub.
@@ -33,7 +33,7 @@ GISA. Lokal SQLite, in Prod HANA. Fiori Elements UI. Aufgabenstellung als PDF
   wenn fertig → pushen. Erst lokal committen, später pushen.
 
 ## Was funktioniert (verifiziert)
-- Backend: **17/17 Tests grün** (Auth, Generieren, Multi-User-Isolation, Push,
+- Backend: **19/19 Tests grün** (Auth, Generieren, Multi-User-Isolation, Push,
   Validierung, Tracking, Multi-System, Copy, Löschen).
 - FE-UI (mit Playwright/headless Chrome objektiv getestet):
   - Generator-List-Report rendert; "Generieren" (Anzahl-Prompt) erzeugt Daten.
@@ -55,10 +55,13 @@ GISA. Lokal SQLite, in Prod HANA. Fiori Elements UI. Aufgabenstellung als PDF
   **S4Q** (BackendAPI_3).
 - `srv/service.cds`: Service `GeneratorService`, @path `/service/generator`,
   @requires `Generator`. Actions: `generateTestCustomers(anzahl)`,
-  `pushToBackend(system)`, `copyData(sourceSystem, targetSystem)`,
-  `deleteFromBackend(system)`.
+  `pushToBackend(systems : many String)` (Mehrfachauswahl, leer = Default-System),
+  `copyData(sourceSystem, targetSystem)`, `deleteFromBackend(system)`.
   Entities: Pools, `GeneratorData` (per-user), `CreatedObjects` (read-only,
-  per-user), `Systems` (CRUD, gemeinsam).
+  per-user), `Systems` (CRUD, gemeinsam) sowie die beiden Tracking-Sichten
+  `TrackedPartners` (PARENT: eine Zeile je Person, `group by sourceConcatID`) und
+  `PartnerSystems` (CHILD: je System eine Zeile mit der dort vergebenen Nummer)
+  — zusammen bilden sie das 1:n-Tracking Person → Systeme.
 - `srv/service.js`: Logik.
   - Push: wählt Zielsystem (oder Default) aus `Systems`, verbindet zu dessen
     `serviceName`, legt Street→City→Address→BusinessPartner an, trackt unter
@@ -118,7 +121,50 @@ optional / Ausbau):
 - **mehr Objekttypen** ("multiple different master data entities"; aktuell
   BusinessPartner + Adresse, von der PDF als Beispiele genannt).
 - **Building Blocks** zur UI-Verschönerung (Design nach Funktion).
-- `xsappname` in `xs-security.json` an echte XSUAA-Instanz anpassen (Deployment).
+- **Destination zum echten S/4-System** (URL + Auth kommen von Betreuer
+  Christian). Bis dahin laufen Push/Copy/Delete gegen die lokalen Mocks.
+
+## BTP-Deployment (Branch `feat/deployment`)
+Als MTA beschrieben (`mta.yaml`), Deploy in einen Cloud-Foundry-Space:
+```bash
+npm install                                              # Lockfile synchron halten
+npx mbt build                                            # -> mta_archives/*.mtar
+cf deploy mta_archives/gisa-master-data-generator_1.0.0.mtar -f
+```
+Module: `srv` (CAP), `db-deployer` (HANA-Schema), `app-deployer` (lädt die drei
+Fiori-Apps ins HTML5-Repo) + Ressourcen XSUAA, HANA (hdi-shared), Destination,
+HTML5-Repo-Host. Das `xsappname` wird in `mta.yaml` gesetzt (nicht mehr manuell
+in `xs-security.json`).
+
+**Verifiziert:** Backend und HANA laufen; `/service/generator/` antwortet mit
+HTTP 401 (erreichbar + korrekt geschützt). Fachlich auf BTP noch **nicht**
+erprobt — dort konnte sich mangels Oberfläche noch nie jemand anmelden.
+
+**Blocker – Zugang zu den Oberflächen:** Die drei Apps liegen im HTML5-Repo,
+es fehlt die ausliefernde Komponente. Geplant ist SAP Build Work Zone
+(Launchpad mit Kacheln). Work Zone verlangt inzwischen zwingend Anmeldung über
+SAP Cloud Identity Services (IAS) per OIDC — SAML genügt nicht mehr
+(SAP-Hinweis **KBA 3600432**). Der Subscribe scheitert sonst mit
+`{"code":422,"errorDetails":"OIDC trust missing"}`, und die Folge davon ist der
+Site-Manager-Fehler *"No client with requested id: sb-launchpad-dt-approuter"* —
+dieser Fehler hat **nichts** mit der Work-Zone-Instanz zu tun (Instanz
+löschen/neu anlegen hilft nicht).
+
+Vorgehen: `sap-identity-services-onboarding` abonnieren → IAS-Admin per Mail
+aktivieren → warten, bis `btp list security/available-idp` den Tenant zeigt
+(SAP-seitige Registrierung, laut Doku bis zu 2 Stunden; vorher scheitert
+`btp create security/trust` mit *"No valid IAS tenant … found for your account"*)
+→ Trust anlegen → Work Zone abonnieren → Site + Kacheln bauen.
+
+**Zwei Fristen beachten:** Der IAS-Trial-Tenant gilt nur **14 Tage** (kürzer als
+der BTP-Trial mit ~90 Tagen) — das Launchpad-Login stirbt mit ihm. Ein
+Firmen-Subaccount von GISA löst das und wird für die S/4-Destination ohnehin
+gebraucht. Alternative ohne IAS: **Standalone-Approuter** (3 geschützte
+App-URLs, hält so lange wie der Trial) — dann allerdings ohne Kacheln.
+
+**Trial-Verhalten:** CF-Apps werden bei Inaktivität *gestoppt* (nicht gelöscht).
+HTTP 404 auf der App-Route heißt deshalb meist nur `cf start …` — vor jeder Demo
+Backend starten und HANA hochfahren.
 
 ## Nutzer-Kontext
 Git-/SAP-Einsteiger. Kurz erklären, einfach halten (keine Überkomplizierung),

@@ -1,6 +1,9 @@
 {
-  "welcomeFile": "/index.html",
+  "welcomeFile": "/gisamdg.generator/index.html",
   "authenticationMethod": "route",
+  "logout": {
+    "logoutEndpoint": "/do/logout"
+  },
   "routes": [
     {
       "source": "^/service/generator/(.*)$",
@@ -11,9 +14,9 @@
     },
     {
       "source": "^(.*)$",
+      "target": "$1",
       "service": "html5-apps-repo-rt",
-      "authenticationType": "xsuaa",
-      "target": "$1"
+      "authenticationType": "xsuaa"
     }
   ]
 }

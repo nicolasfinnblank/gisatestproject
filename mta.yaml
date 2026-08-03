@@ -108,6 +108,26 @@ modules:
       supported-platforms:
         []
 
+  # Standalone-Approuter: liefert die drei Fiori-Apps aus dem HTML5-Repository
+  # aus und leitet /service/generator/* an den CAP-Service weiter. Damit sind
+  # die Apps ohne SAP Build Work Zone (und ohne IAS) erreichbar.
+  - name: gisa-master-data-generator-approuter
+    type: approuter.nodejs
+    path: app/router
+    parameters:
+      keep-existing-routes: true
+      disk-quota: 512M
+      memory: 256M
+    requires:
+      - name: srv-api
+        group: destinations
+        properties:
+          name: srv-api
+          url: ~{srv-url}
+          forwardAuthToken: true
+      - name: gisa-master-data-generator-auth
+      - name: gisa-master-data-generator-html5-runtime
+
   - name: gisa-master-data-generator-destinations
     type: com.sap.application.content
     requires:
@@ -177,3 +197,11 @@ resources:
     parameters:
       service: html5-apps-repo
       service-plan: app-host
+
+  # Laufzeit-Gegenstueck zum app-host: erlaubt dem Approuter, die Apps aus dem
+  # HTML5-Repository auszuliefern (Service "html5-apps-repo-rt" in xs-app.json).
+  - name: gisa-master-data-generator-html5-runtime
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: html5-apps-repo
+      service-plan: app-runtime

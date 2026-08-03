@@ -153,12 +153,12 @@ modules:
             - Name: gisa-master-data-generator-html5-repository
               ServiceInstanceName: gisa-master-data-generator-html5-repo-host
               ServiceKeyName: gisa-master-data-generator-html5-repo-host-key
-              sap.cloud.service: gisamasterdatagenerator.service
+              sap.cloud.service: gisamdg
             - Name: gisa-master-data-generator-auth
               Authentication: OAuth2UserTokenExchange
               ServiceInstanceName: gisa-master-data-generator-auth
               ServiceKeyName: gisa-master-data-generator-auth-key
-              sap.cloud.service: gisamasterdatagenerator.service
+              sap.cloud.service: gisamdg
 
 resources:
   - name: gisa-master-data-generator-auth

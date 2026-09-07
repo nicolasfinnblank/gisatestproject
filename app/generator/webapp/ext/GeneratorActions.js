@@ -2,13 +2,21 @@ sap.ui.define([
   "sap/m/MessageToast",
   "sap/m/Dialog",
   "sap/m/Button",
-  "sap/m/Select",
   "sap/m/MultiComboBox",
   "sap/ui/core/Item",
   "sap/m/Label",
   "sap/m/VBox"
-], function (MessageToast, Dialog, Button, Select, MultiComboBox, Item, Label, VBox) {
+], function (MessageToast, Dialog, Button, MultiComboBox, Item, Label, VBox) {
   "use strict";
+
+  // Adresse der Schwester-Apps. Lokal liegen sie unter /<app>/webapp/index.html,
+  // auf BTP liefert sie das HTML5-Repository unter /gisamdg<app>/index.html aus.
+  // Am eigenen Pfad erkennen wir, in welcher Umgebung wir laufen.
+  function appUrl(sApp) {
+    return window.location.pathname.indexOf("/gisamdg") === 0
+      ? "/gisamdg" + sApp + "/index.html"
+      : "/" + sApp + "/webapp/index.html";
+  }
 
   // Ruft eine unbound OData-Action des Generator-Service auf.
   function callAction(sName, oBody) {
@@ -40,6 +48,7 @@ sap.ui.define([
   }
 
   return {
+    // Testdaten aus den Pools erzeugen.
     onGenerate: function () {
       const oApi = this;
       const sVal = window.prompt("Wie viele Datensätze generieren?", "10");
@@ -95,109 +104,15 @@ sap.ui.define([
       }).catch(function (e) { MessageToast.show("Fehler: " + e.message); });
     },
 
-    // Daten von einem System ins andere kopieren (Dialog: Von / Nach).
-    onCopy: function () {
-      loadSystems().then(function (aSystems) {
-        if (aSystems.length < 2) {
-          MessageToast.show("Mindestens zwei Zielsysteme noetig (siehe 'Systeme verwalten').");
-          return;
-        }
-
-        function buildSelect() {
-          const oSel = new Select({ width: "100%" });
-          aSystems.forEach(function (s) {
-            oSel.addItem(new Item({ key: s.ID, text: s.name + (s.description ? " – " + s.description : "") }));
-          });
-          return oSel;
-        }
-        const oFrom = buildSelect();
-        const oTo = buildSelect();
-        const oDefault = aSystems.find(function (s) { return s.isDefault; }) || aSystems[0];
-        const oOther = aSystems.find(function (s) { return s.ID !== oDefault.ID; });
-        oFrom.setSelectedKey(oDefault.ID);
-        oTo.setSelectedKey(oOther.ID);
-
-        const oDialog = new Dialog({
-          title: "Daten zwischen Systemen kopieren",
-          content: new VBox({
-            items: [
-              new Label({ text: "Von (Quelle):", labelFor: oFrom }), oFrom,
-              new Label({ text: "Nach (Ziel):", labelFor: oTo }), oTo
-            ]
-          }).addStyleClass("sapUiContentPadding"),
-          beginButton: new Button({
-            text: "Kopieren",
-            type: "Emphasized",
-            press: function () {
-              const sFrom = oFrom.getSelectedKey();
-              const sTo = oTo.getSelectedKey();
-              if (sFrom === sTo) { MessageToast.show("Quelle und Ziel muessen unterschiedlich sein."); return; }
-              oDialog.close();
-              callAction("copyData", { sourceSystem: sFrom, targetSystem: sTo })
-                .then(function (msg) { MessageToast.show(msg || "Kopiert"); })
-                .catch(function (e) { MessageToast.show("Fehler: " + e.message); });
-            }
-          }),
-          endButton: new Button({ text: "Abbrechen", press: function () { oDialog.close(); } }),
-          afterClose: function () { oDialog.destroy(); }
-        });
-        oDialog.open();
-      }).catch(function (e) { MessageToast.show("Fehler: " + e.message); });
-    },
-
-    // Im gewaehlten System angelegte Objekte wieder loeschen (Dialog).
-    onDelete: function () {
-      loadSystems().then(function (aSystems) {
-        if (!aSystems.length) {
-          MessageToast.show("Keine Zielsysteme konfiguriert.");
-          return;
-        }
-
-        const oSelect = new Select({ width: "100%" });
-        aSystems.forEach(function (s) {
-          oSelect.addItem(new Item({
-            key: s.ID,
-            text: s.name + (s.description ? " – " + s.description : "") + (s.isDefault ? " (Standard)" : "")
-          }));
-        });
-        const oDefault = aSystems.find(function (s) { return s.isDefault; });
-        if (oDefault) { oSelect.setSelectedKey(oDefault.ID); }
-
-        const oDialog = new Dialog({
-          title: "Im SAP-System löschen",
-          state: "Warning",
-          content: new VBox({
-            items: [
-              new Label({ text: "Löscht die von dir in diesem System angelegten Objekte unwiderruflich." }),
-              new Label({ text: "System:", labelFor: oSelect }), oSelect
-            ]
-          }).addStyleClass("sapUiContentPadding"),
-          beginButton: new Button({
-            text: "Löschen",
-            type: "Reject",
-            press: function () {
-              const sId = oSelect.getSelectedKey();
-              oDialog.close();
-              callAction("deleteFromBackend", { system: sId })
-                .then(function (msg) { MessageToast.show(msg || "Gelöscht"); })
-                .catch(function (e) { MessageToast.show("Fehler: " + e.message); });
-            }
-          }),
-          endButton: new Button({ text: "Abbrechen", press: function () { oDialog.close(); } }),
-          afterClose: function () { oDialog.destroy(); }
-        });
-        oDialog.open();
-      }).catch(function (e) { MessageToast.show("Fehler: " + e.message); });
-    },
-
-    // Zur Tracking-Liste (eigenstaendige FE-App unter anderer URL).
+    // Zur Tracking-Liste. Dort liegen Kopieren und Loeschen, weil beide auf
+    // den Tracking-Eintraegen arbeiten.
     onShowTracking: function () {
-      window.location.href = "/tracking/webapp/index.html";
+      window.location.href = appUrl("tracking");
     },
 
-    // Zur Zielsystem-Verwaltung (eigenstaendige FE-App unter anderer URL).
+    // Zur Zielsystem-Verwaltung.
     onShowSystems: function () {
-      window.location.href = "/systems/webapp/index.html";
+      window.location.href = appUrl("systems");
     }
   };
 });

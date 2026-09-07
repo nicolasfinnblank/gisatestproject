@@ -11,6 +11,15 @@ sap.ui.define([
 ], function (MessageToast, Dialog, Button, Input, Select, Item, CheckBox, Label, VBox) {
   "use strict";
 
+  // Adresse der Schwester-Apps. Lokal liegen sie unter /<app>/webapp/index.html,
+  // auf BTP liefert sie das HTML5-Repository unter /gisamdg<app>/index.html aus.
+  // Am eigenen Pfad erkennen wir, in welcher Umgebung wir laufen.
+  function appUrl(sApp) {
+    return window.location.pathname.indexOf("/gisamdg") === 0
+      ? "/gisamdg" + sApp + "/index.html"
+      : "/" + sApp + "/webapp/index.html";
+  }
+
   // Liste neu laden (defensiv ueber die FE-ExtensionAPI).
   function refresh(oApi) {
     try {
@@ -73,7 +82,7 @@ sap.ui.define([
 
     // Zurueck zur Generator-Liste.
     onBackToGenerator: function () {
-      window.location.href = "/generator/webapp/index.html";
+      window.location.href = appUrl("generator");
     }
   };
 });

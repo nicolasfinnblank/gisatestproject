@@ -97,6 +97,16 @@
               "controlConfiguration": {
                 "@com.sap.vocabularies.UI.v1.LineItem": {
                   "actions": {
+                    "copy": {
+                      "press": "gisamdg.tracking.ext.TrackingActions.onCopy",
+                      "text": "Daten kopieren",
+                      "enabled": true
+                    },
+                    "deleteInSystem": {
+                      "press": "gisamdg.tracking.ext.TrackingActions.onDelete",
+                      "text": "Im System löschen",
+                      "enabled": true
+                    },
                     "backToGenerator": {
                       "press": "gisamdg.tracking.ext.TrackingActions.onBackToGenerator",
                       "text": "Zum Generator",

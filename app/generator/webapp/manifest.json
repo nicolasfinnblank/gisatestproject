@@ -11,7 +11,7 @@
     },
     "dataSources": {
       "mainService": {
-        "uri": "/service/generator/",
+        "uri": "service/generator/",
         "type": "OData",
         "settings": {
           "odataVersion": "4.0"

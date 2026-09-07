@@ -13,14 +13,26 @@ sap.ui.define([
   // auf BTP liefert sie das HTML5-Repository unter /gisamdg<app>/index.html aus.
   // Am eigenen Pfad erkennen wir, in welcher Umgebung wir laufen.
   function appUrl(sApp) {
-    return window.location.pathname.indexOf("/gisamdg") === 0
-      ? "/gisamdg" + sApp + "/index.html"
-      : "/" + sApp + "/webapp/index.html";
+    // Erstes Pfadsegment: "gisamdggenerator" (Standalone-Approuter) oder
+    // "gisamasterdatageneratorservice.gisamdggenerator-1.0.0" (Work Zone).
+    // Darin nur den App-Teil tauschen, damit der Rest der Umgebung erhalten bleibt.
+    var seg = window.location.pathname.split("/")[1] || "";
+    if (seg.indexOf("gisamdg") >= 0) {
+      return "/" + seg.replace(/gisamdg(generator|tracking|systems)/, "gisamdg" + sApp) + "/index.html";
+    }
+    return "/" + sApp + "/webapp/index.html";
+  }
+
+  // Adresse des CAP-Service RELATIV zur App (wie der Service-Pfad im manifest.json).
+  // Auf BTP leitet der jeweilige Approuter <app>/service/generator/* an das
+  // Backend weiter, lokal uebernimmt srv/server.js die Umschreibung.
+  function serviceUrl(sPath) {
+    return sap.ui.require.toUrl("gisamdg/tracking/service/generator/") + (sPath || "");
   }
 
   // Ruft eine unbound OData-Action des Generator-Service auf.
   function callAction(sName, oBody) {
-    return fetch("/service/generator/" + sName, {
+    return fetch(serviceUrl(sName), {
       method: "POST",
       headers: { "Content-Type": "application/json", "Accept": "application/json" },
       body: JSON.stringify(oBody || {})
@@ -35,7 +47,7 @@ sap.ui.define([
 
   // Liste der konfigurierten Zielsysteme laden.
   function loadSystems() {
-    return fetch("/service/generator/Systems?$select=ID,name,description,isDefault&$orderby=name", {
+    return fetch(serviceUrl("Systems?$select=ID,name,description,isDefault&$orderby=name"), {
       headers: { "Accept": "application/json" }
     }).then(function (r) { return r.json(); }).then(function (j) { return j.value || []; });
   }

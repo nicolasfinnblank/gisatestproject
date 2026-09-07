@@ -37,13 +37,14 @@ GISA. Lokal SQLite, in Prod HANA. Fiori Elements UI. Aufgabenstellung als PDF
   Validierung, Tracking, Multi-System, Copy, Löschen).
 - FE-UI (mit Playwright/headless Chrome objektiv getestet):
   - Generator-List-Report rendert; "Generieren" (Anzahl-Prompt) erzeugt Daten.
-  - "An Backend pushen" → Dialog mit **Zielsystem-Dropdown** → Push ins gewählte
-    Backend.
-  - "Daten kopieren" → Dialog **Von/Nach** → kopiert die eigenen Partner ins
-    Zielsystem (verifiziert: backend-3 0→2).
-  - "Im System löschen" → Warn-Dialog (System-Auswahl) → löscht die eigenen
-    Objekte wieder aus dem Backend (verifiziert: backend-2 2→0).
-  - "Tracking anzeigen" / "Systeme verwalten" navigieren zu den anderen Apps.
+  - "An Backend pushen" → Dialog mit **Mehrfachauswahl** der Zielsysteme →
+    Push in alle gewählten Backends.
+  - **Tracking-App:** "Daten kopieren" (Dialog **Von/Nach**, kopiert die eigenen
+    Partner ins Zielsystem) und "Im System löschen" (Warn-Dialog, löscht die
+    eigenen Objekte wieder). Seit 07.09. dort statt im Generator — beide
+    arbeiten auf den Tracking-Einträgen (`CreatedObjects`).
+  - "Tracking anzeigen" / "Systeme verwalten" / "Zurück" navigieren zwischen
+    den Apps (Ersatz fürs Launchpad).
   - Systeme-App: Liste + "Neues System" (Dialog) legt per POST an.
 
 ## Architektur / Schlüsseldateien
@@ -82,7 +83,9 @@ GISA. Lokal SQLite, in Prod HANA. Fiori Elements UI. Aufgabenstellung als PDF
   Systems.
 - `app/generator/webapp/`, `app/tracking/webapp/`, `app/systems/webapp/`: drei
   eigenständige FE-Apps. Custom-Aktionen in je `ext/*.js`. Navigation zwischen
-  ihnen per `window.location.href` (eigene URLs).
+  ihnen per `window.location.href` über `appUrl()`: erkennt am eigenen Pfad
+  BTP (`/gisamdg<app>/index.html`) vs. lokal (`/<app>/webapp/index.html`).
+  Jede App hat einen eigenen Intent (`generator|tracking|systems` / `display`).
 
 ## KRITISCHE Gotchas (NICHT wiederholen!)
 1. **Höhe-0-Bug**: FE-App rendert sonst in Container mit Höhe 0 = weiße Seite.
@@ -124,47 +127,82 @@ optional / Ausbau):
 - **Destination zum echten S/4-System** (URL + Auth kommen von Betreuer
   Christian). Bis dahin laufen Push/Copy/Delete gegen die lokalen Mocks.
 
-## BTP-Deployment (Branch `feat/deployment`)
-Als MTA beschrieben (`mta.yaml`), Deploy in einen Cloud-Foundry-Space:
+## BTP-Deployment (Branch `feat/approuter`, Stand 07.09.2026)
+Konto: Global Account `eb23aca2trial`, Subaccount `trial`
+(ID `123c2a99-96c7-4c66-8a0e-22b7b94f2aad`), Region us10, Org `eb23aca2trial`,
+Space `dev`, CF-API `https://api.cf.us10-001.hana.ondemand.com`. Der alte Trial
+`f08f5f0etrial` ist gelöscht (war defekt, siehe unten).
+
+Als MTA beschrieben (`mta.yaml`):
 ```bash
 npm install                                              # Lockfile synchron halten
 npx mbt build                                            # -> mta_archives/*.mtar
 cf deploy mta_archives/gisa-master-data-generator_1.0.0.mtar -f
 ```
-Module: `srv` (CAP), `db-deployer` (HANA-Schema), `app-deployer` (lädt die drei
-Fiori-Apps ins HTML5-Repo) + Ressourcen XSUAA, HANA (hdi-shared), Destination,
-HTML5-Repo-Host. Das `xsappname` wird in `mta.yaml` gesetzt (nicht mehr manuell
-in `xs-security.json`).
+Module: `srv` (CAP), `db-deployer` (HANA-Schema), `app-deployer` (drei Fiori-Apps
+ins HTML5-Repo), `approuter` (Standalone) + Ressourcen XSUAA (mit
+`redirect-uris`!), HANA hdi-shared, Destination, HTML5-Repo `app-host` +
+`app-runtime`. Vor dem ersten Deploy HANA anlegen:
+`cf create-service hana-cloud hana-free gisa-hana -c '{"data":{"memory":16,"systempassword":"…","whitelistIPs":["0.0.0.0/0"]}}'`
 
-**Verifiziert:** Backend und HANA laufen; `/service/generator/` antwortet mit
-HTTP 401 (erreichbar + korrekt geschützt). Fachlich auf BTP noch **nicht**
-erprobt — dort konnte sich mangels Oberfläche noch nie jemand anmelden.
+**Läuft (verifiziert 07.09.):**
+- HANA `gisa-hana`, Backend (`/service/generator/` -> 401), HDI-Schema deployt.
+- Drei Apps im HTML5-Repo: `gisamdggenerator`, `gisamdgtracking`, `gisamdgsystems`
+  — **Name = `sap.app.id` ohne Punkt**, nicht `gisamdg.generator` (das war der
+  503-Fehler des Approuters). Prüfen: `cf html5-list` (Plugin `html5-plugin`).
+- Standalone-Approuter (Login über IAS, Generator-Oberfläche lädt):
+  `https://eb23aca2trial-dev-gisa-master-data-generator-approuter.cfapps.us10-001.hana.ondemand.com`
+  Apps: `/gisamdggenerator/index.html`, `/gisamdgtracking/…`, `/gisamdgsystems/…`
+- **Work Zone läuft:** IAS-Tenant `a9jpmbquf`, Trust `sap.custom` aktiv,
+  Subscription `SUBSCRIBED`, Site mit drei Kacheln.
+  Site Manager (Verwaltung, `dt`): `https://eb23aca2trial.dt.launchpad.cfapps.us10.hana.ondemand.com`
+  Launchpad (Nutzer): `https://eb23aca2trial.launchpad.cfapps.us10.hana.ondemand.com/site?siteId=b9e6e59a-45d1-4b51-b3b7-34b263823079`
+- Rollen an `magnusbuchwald279@gmail.com` über `--of-idp sap.custom` (IAS!):
+  `Generator (gisa-master-data-generator eb23aca2trial-dev)`, `Launchpad_Admin`.
 
-**Blocker – Zugang zu den Oberflächen:** Die drei Apps liegen im HTML5-Repo,
-es fehlt die ausliefernde Komponente. Geplant ist SAP Build Work Zone
-(Launchpad mit Kacheln). Work Zone verlangt inzwischen zwingend Anmeldung über
-SAP Cloud Identity Services (IAS) per OIDC — SAML genügt nicht mehr
-(SAP-Hinweis **KBA 3600432**). Der Subscribe scheitert sonst mit
-`{"code":422,"errorDetails":"OIDC trust missing"}`, und die Folge davon ist der
-Site-Manager-Fehler *"No client with requested id: sb-launchpad-dt-approuter"* —
-dieser Fehler hat **nichts** mit der Work-Zone-Instanz zu tun (Instanz
-löschen/neu anlegen hilft nicht).
+**Noch nicht verifiziert:** fachlicher Durchlauf auf BTP (Generieren -> Push ->
+Tracking -> Kopieren -> Löschen). Push zeigt in der Cloud weiter auf die Mocks.
 
-Vorgehen: `sap-identity-services-onboarding` abonnieren → IAS-Admin per Mail
-aktivieren → warten, bis `btp list security/available-idp` den Tenant zeigt
-(SAP-seitige Registrierung, laut Doku bis zu 2 Stunden; vorher scheitert
-`btp create security/trust` mit *"No valid IAS tenant … found for your account"*)
-→ Trust anlegen → Work Zone abonnieren → Site + Kacheln bauen.
+**Warum Work Zone wochenlang scheiterte:** Work Zone verlangt seit 20.03.2025
+zwingend IAS über OIDC (SAP-Hinweis **KBA 3600432**), SAML genügt nicht. Der
+Site-Manager-Fehler *"No client with requested id: sb-launchpad-dt-approuter"*
+ist nur das letzte Glied: IAS-Tenant nicht mit Kundennummer verknüpft -> kein
+Trust -> Subscribe scheitert (422 `OIDC trust missing`) -> Anmeldekomponente
+fehlt. Der Site Manager gehört zur **Subscription**, nicht zur Instanz —
+`cf` zeigt Subscriptions nicht, dafür `~/bin/btp` nutzen. Im alten Trial kam die
+Verknüpfung nach 3,5 Std. nicht; im neuen Trial nach **5 Minuten**.
 
-**Zwei Fristen beachten:** Der IAS-Trial-Tenant gilt nur **14 Tage** (kürzer als
-der BTP-Trial mit ~90 Tagen) — das Launchpad-Login stirbt mit ihm. Ein
-Firmen-Subaccount von GISA löst das und wird für die S/4-Destination ohnehin
-gebraucht. Alternative ohne IAS: **Standalone-Approuter** (3 geschützte
-App-URLs, hält so lange wie der Trial) — dann allerdings ohne Kacheln.
+**Work Zone neu aufsetzen (z. B. wenn der IAS-Tenant abläuft):**
+1. `btp subscribe accounts/subaccount --subaccount <id> --to-app sap-identity-services-onboarding --plan default`
+   -> Aktivierungsmail -> Admin-Passwort setzen
+2. `btp list security/available-idp` bis der Tenant erscheint, dann
+   `btp create security/trust --subaccount <id> --idp <VOLLER Host>` (nicht nur Kürzel)
+3. `btp subscribe accounts/subaccount --subaccount <id> --to-app SAPLaunchpadSMS --plan standard`
+4. `btp assign security/role-collection <Rolle> --to-user <mail> --of-idp sap.custom --subaccount <id>`
 
-**Trial-Verhalten:** CF-Apps werden bei Inaktivität *gestoppt* (nicht gelöscht).
-HTTP 404 auf der App-Route heißt deshalb meist nur `cf start …` — vor jeder Demo
-Backend starten und HANA hochfahren.
+**Bekannte Einschränkung:** Content Manager -> Content Explorer -> HTML5 Apps
+zeigt **(0)**, Report `total 0, failed 0`, obwohl alle Pflichtangaben erfüllt sind
+(Apps im Cockpit unter „Managed Application Router provided by SAP Build Work
+Zone", eindeutige Intents `generator/tracking/systems-display`, `sap.cloud.service`,
+explizite `minUI5Version`). Bekanntes Trial-Verhalten (Community: klappt teils
+Tage später nach Channel-Update, teils nie). **Täglich prüfen:** Channel Manager ->
+HTML5 Apps -> Update -> Content Explorer. Nicht weiter konfigurieren.
+Behelf, der läuft: drei Apps **manuell** im Content Manager (Intent wie oben,
+URL = volle Approuter-Adresse, „auf neuer Registerkarte öffnen" AN, beide
+Parameter-Häkchen AUS) + Group + Rolle Everyone + Site. Eingebettet öffnen geht
+nicht: die SAP-Anmeldeseite verbietet iframes, Firefox isoliert Fremd-Cookies.
+Tauchen die Apps im Content Explorer auf: übernehmen und die Kacheln ersetzen —
+dann laufen die Apps im Launchpad und der Standalone-Approuter wird optional.
+
+**Fristen:** IAS-Trial-Tenant gilt **14 Tage** (angelegt 07.09. -> ca. 21.09.),
+**Abgabe 25.09.2026** — vor der Präsentation IAS nach obiger Anleitung neu
+aufsetzen. BTP-Trial ~90 Tage.
+
+**Trial-Verhalten:** CF-Apps werden bei Inaktivität *gestoppt* (nicht gelöscht):
+HTTP 404 auf der Route heißt `cf start gisa-master-data-generator-srv` (und
+`…-approuter`). HANA schaltet ab: `cf update-service gisa-hana -c '{"data":{"serviceStopped":false}}'`
+(10–15 Min). `cf service gisa-hana` zeigt nur den *letzten Vorgang*, nicht den
+Betriebszustand — die Deployer-Logs sagen „HANA Database instance is stopped".
 
 ## Nutzer-Kontext
 Git-/SAP-Einsteiger. Kurz erklären, einfach halten (keine Überkomplizierung),

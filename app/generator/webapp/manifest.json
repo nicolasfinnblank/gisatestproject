@@ -20,9 +20,10 @@
     },
     "crossNavigation": {
       "inbounds": {
-        "tracking-display": {
-          "semanticObject": "tracking",
+        "generator-display": {
+          "semanticObject": "generator",
           "action": "display",
+          "title": "{{appTitle}}",
           "signature": {
             "parameters": {},
             "additionalParameters": "allowed"

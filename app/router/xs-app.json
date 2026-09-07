@@ -1,5 +1,5 @@
 {
-  "welcomeFile": "/gisamdg.generator/index.html",
+  "welcomeFile": "/gisamdggenerator/index.html",
   "authenticationMethod": "route",
   "logout": {
     "logoutEndpoint": "/do/logout"

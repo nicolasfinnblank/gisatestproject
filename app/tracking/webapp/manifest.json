@@ -23,6 +23,7 @@
         "tracking-display": {
           "semanticObject": "tracking",
           "action": "display",
+          "title": "{{appTitle}}",
           "signature": {
             "parameters": {},
             "additionalParameters": "allowed"

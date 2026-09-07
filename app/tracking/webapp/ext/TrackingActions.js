@@ -22,6 +22,19 @@ sap.ui.define([
     }
     return "/" + sApp + "/webapp/index.html";
   }
+  // Wechsel zu einer Schwester-App. Im Launchpad ueber die Shell (Intent
+  // <app>-display, wie in manifest.json/Work Zone hinterlegt) - dann bleibt
+  // die App eingebettet. Ohne Shell (Standalone-Approuter, lokal) per Adresse.
+  function navigateTo(sApp) {
+    if (window.sap && sap.ushell && sap.ushell.Container) {
+      sap.ushell.Container.getServiceAsync("CrossApplicationNavigation").then(function (oNav) {
+        oNav.toExternal({ target: { semanticObject: sApp, action: "display" } });
+      });
+      return;
+    }
+    window.location.href = appUrl(sApp);
+  }
+
 
   // Adresse des CAP-Service RELATIV zur App (wie der Service-Pfad im manifest.json).
   // Auf BTP leitet der jeweilige Approuter <app>/service/generator/* an das
@@ -158,7 +171,7 @@ sap.ui.define([
 
     // Zurueck zur Generator-Liste.
     onBackToGenerator: function () {
-      window.location.href = appUrl("generator");
+      navigateTo("generator");
     }
   };
 });

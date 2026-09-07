@@ -160,8 +160,18 @@ ins HTML5-Repo), `approuter` (Standalone) + Ressourcen XSUAA (mit
 - Rollen an `magnusbuchwald279@gmail.com` über `--of-idp sap.custom` (IAS!):
   `Generator (gisa-master-data-generator eb23aca2trial-dev)`, `Launchpad_Admin`.
 
-**Noch nicht verifiziert:** fachlicher Durchlauf auf BTP (Generieren -> Push ->
-Tracking -> Kopieren -> Löschen). Push zeigt in der Cloud weiter auf die Mocks.
+**Zielsysteme in der Cloud = Mocks (bis Christians S/4-Destination kommt):**
+Generieren lief auf BTP, Push/Kopieren/Löschen brachen mit „Internal Server
+Error" ab — im Produktionsmodus gibt es weder Mocks noch Destinations für
+`BackendAPI_2/3`. Lösung (07.09.): `db/mocks.cds` hebt `@cds.persistence.skip`
+für die Mock-Entities auf (-> 8 Tabellen im HANA-Build), `package.json` erlaubt
+Mocks in Produktion (`cds.features.[production].with_mocks`) und startet mit
+`cds-serve --with-mocks`. Der Mock-Code selbst ist unverändert. Sobald die echte
+Destination da ist: `[production]`-Credentials für `BackendAPI_2/3` eintragen,
+`--with-mocks` aus dem Start-Skript nehmen, `db/mocks.cds` löschen.
+
+**Noch nicht verifiziert:** fachlicher Durchlauf auf BTP mit den Cloud-Mocks
+(Generieren -> Push -> Tracking -> Kopieren -> Löschen).
 
 **Warum Work Zone wochenlang scheiterte:** Work Zone verlangt seit 20.03.2025
 zwingend IAS über OIDC (SAP-Hinweis **KBA 3600432**), SAML genügt nicht. Der

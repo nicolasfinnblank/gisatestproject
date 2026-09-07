@@ -20,7 +20,7 @@
     "jest": "^30.4.2"
   },
   "scripts": {
-    "start": "cds-serve",
+    "start": "cds-serve --with-mocks",
     "watch": "cds watch",
     "test": "jest"
   },
@@ -60,6 +60,11 @@
       "destinations": true,
       "html5-repo": true,
       "workzone": true
+    },
+    "features": {
+      "[production]": {
+        "with_mocks": true
+      }
     }
   }
 }

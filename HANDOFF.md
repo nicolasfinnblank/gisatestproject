@@ -180,19 +180,30 @@ Verknüpfung nach 3,5 Std. nicht; im neuen Trial nach **5 Minuten**.
 3. `btp subscribe accounts/subaccount --subaccount <id> --to-app SAPLaunchpadSMS --plan standard`
 4. `btp assign security/role-collection <Rolle> --to-user <mail> --of-idp sap.custom --subaccount <id>`
 
+**Apps laufen im Launchpad (seit 07.09., 16:30):** Die drei App-Einträge in
+Work Zone sind **manuell** angelegt (Content Manager -> Create -> App), mit
+Intent `generator|tracking|systems` / `display` und als URL die Work-Zone-
+Laufzeitadresse der jeweiligen App:
+`https://eb23aca2trial.launchpad.cfapps.us10.hana.ondemand.com/gisamasterdatageneratorservice.gisamdg<app>-1.0.0/index.html`
+(Muster: `<sap.cloud.service ohne Punkte>.<sap.app.id ohne Punkt>-<Version>`).
+„Auf neuer Registerkarte öffnen" AUS, beide Parameter-Häkchen AUS -> die Apps
+öffnen **eingebettet** im Launchpad (`#generator-display`). Voraussetzung dafür
+war der relative Service-Pfad `service/generator/` im manifest.json (absolut
+-> weiße Seite hinter Work Zones Approuter). Die Standalone-Approuter-Adresse
+funktioniert weiterhin als direkter Zugang.
+
 **Bekannte Einschränkung:** Content Manager -> Content Explorer -> HTML5 Apps
 zeigt **(0)**, Report `total 0, failed 0`, obwohl alle Pflichtangaben erfüllt sind
-(Apps im Cockpit unter „Managed Application Router provided by SAP Build Work
-Zone", eindeutige Intents `generator/tracking/systems-display`, `sap.cloud.service`,
-explizite `minUI5Version`). Bekanntes Trial-Verhalten (Community: klappt teils
-Tage später nach Channel-Update, teils nie). **Täglich prüfen:** Channel Manager ->
-HTML5 Apps -> Update -> Content Explorer. Nicht weiter konfigurieren.
-Behelf, der läuft: drei Apps **manuell** im Content Manager (Intent wie oben,
-URL = volle Approuter-Adresse, „auf neuer Registerkarte öffnen" AN, beide
-Parameter-Häkchen AUS) + Group + Rolle Everyone + Site. Eingebettet öffnen geht
-nicht: die SAP-Anmeldeseite verbietet iframes, Firefox isoliert Fremd-Cookies.
-Tauchen die Apps im Content Explorer auf: übernehmen und die Kacheln ersetzen —
-dann laufen die Apps im Launchpad und der Standalone-Approuter wird optional.
+(Apps in `cf html5-list`, im Cockpit unter „Managed Application Router provided
+by SAP Build Work Zone", eindeutige Intents, `sap.cloud.service`, explizite
+`minUI5Version`, App läuft über die Work-Zone-Laufzeit). Getestet ohne Erfolg:
+Intents eindeutig, `sap.cloud.service` beide Werte, relative Service-Pfade,
+app-host-Instanz gelöscht und neu angelegt (Experiment 1, 07.09. 16:11),
+mehrfach Channel-Update. Community: klappt in Trials teils Tage später, teils
+nie. Folge: nur **Pflegekomfort** (automatische statt manueller App-Einträge).
+Gelegentlich Channel Manager -> Update -> Content Explorer prüfen; erscheinen
+die Apps, die manuellen Einträge dagegen tauschen. Letzte ungetestete Spur:
+Work Zone ab-/neu abonnieren (löscht Site/Gruppe/App-Einträge/WZ-Rollen).
 
 **Fristen:** IAS-Trial-Tenant gilt **14 Tage** (angelegt 07.09. -> ca. 21.09.),
 **Abgabe 25.09.2026** — vor der Präsentation IAS nach obiger Anleitung neu

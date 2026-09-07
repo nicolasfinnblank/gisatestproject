@@ -128,6 +128,6 @@
   },
   "sap.cloud": {
     "public": true,
-    "service": "gisamdg"
+    "service": "gisamasterdatagenerator.service"
   }
 }

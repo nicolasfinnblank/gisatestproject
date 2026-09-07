@@ -118,6 +118,16 @@ modules:
       keep-existing-routes: true
       disk-quota: 512M
       memory: 256M
+    properties:
+      # Der Approuter verbietet standardmaessig jede Einbettung
+      # (X-Frame-Options: SAMEORIGIN). Damit die Work-Zone-Kacheln die Apps in
+      # ihrem Rahmen oeffnen koennen, erlauben wir gezielt das Launchpad -
+      # und nur dieses. X-Frame-Options wird geleert, weil Browser die
+      # modernere frame-ancestors-Regel sonst ignorieren. Ein leerer Wert ist
+      # nicht erlaubt (Approuter verlangt mindestens 1 Zeichen), deshalb
+      # "ALLOWALL": Browser kennen den Wert nicht, ignorieren die Kopfzeile
+      # und richten sich nach frame-ancestors.
+      httpHeaders: '[{"X-Frame-Options": "ALLOWALL"}, {"Content-Security-Policy": "frame-ancestors ''self'' https://*.launchpad.cfapps.us10.hana.ondemand.com"}]'
     requires:
       - name: srv-api
         group: destinations
@@ -153,12 +163,12 @@ modules:
             - Name: gisa-master-data-generator-html5-repository
               ServiceInstanceName: gisa-master-data-generator-html5-repo-host
               ServiceKeyName: gisa-master-data-generator-html5-repo-host-key
-              sap.cloud.service: gisamdg
+              sap.cloud.service: gisamasterdatagenerator.service
             - Name: gisa-master-data-generator-auth
               Authentication: OAuth2UserTokenExchange
               ServiceInstanceName: gisa-master-data-generator-auth
               ServiceKeyName: gisa-master-data-generator-auth-key
-              sap.cloud.service: gisamdg
+              sap.cloud.service: gisamasterdatagenerator.service
 
 resources:
   - name: gisa-master-data-generator-auth

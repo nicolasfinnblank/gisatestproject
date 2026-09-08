@@ -212,8 +212,16 @@ app-host-Instanz gelöscht und neu angelegt (Experiment 1, 07.09. 16:11),
 mehrfach Channel-Update. Community: klappt in Trials teils Tage später, teils
 nie. Folge: nur **Pflegekomfort** (automatische statt manueller App-Einträge).
 Gelegentlich Channel Manager -> Update -> Content Explorer prüfen; erscheinen
-die Apps, die manuellen Einträge dagegen tauschen. Letzte ungetestete Spur:
-Work Zone ab-/neu abonnieren (löscht Site/Gruppe/App-Einträge/WZ-Rollen).
+die Apps, die manuellen Einträge dagegen tauschen. Abschließend geklärt (08.09.): Der Content Explorer liest einen serverseitigen
+Schnappschuss (`getSnapshotEntities`, contextId `saas_approuter_eb23aca2trial`),
+den `POST /provider/html5` (Update) füllt — bei uns mit `[]`, ohne Fehler; der
+Browser spricht nie mit dem Repository. Der Provider ist `providerType: cf` mit
+unserer Subdomain: Work Zone läuft auf Landschaft **cf-us10**, unsere CF-Org nur
+auf **cf-us10-001**, und `btp list accounts/available-environment` bietet dem
+Trial ausschließlich cf-us10-001 an. Ein Neu-Abonnieren oder eine neue
+CF-Umgebung würden daran nichts ändern. **Entscheidung: abgehakt** — für Code,
+Deployment-Paket und Vorführung ohne Unterschied; bei GISA (reguläre Umgebung)
+ist der Content-Explorer-Weg der Normalfall, der manuelle Weg der Rückfall.
 
 **Fristen:** IAS-Trial-Tenant gilt **14 Tage** (angelegt 07.09. -> ca. 21.09.),
 **Abgabe 25.09.2026** — vor der Präsentation IAS nach obiger Anleitung neu

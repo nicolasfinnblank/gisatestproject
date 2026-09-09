@@ -239,10 +239,13 @@ annotate GeneratorService.Runs with @UI.FieldGroup #Main: {
   ]
 };
 
+// Reiter "Alle angelegten Objekte" (technisches Protokoll System|Objekt|
+// Schluessel, Folie 16) ist seit 09.09. ausgeblendet - Entscheidung mit Christian
+// offen. Zum Wiedereinblenden die dritte Zeile ergaenzen:
+//   { $Type: 'UI.ReferenceFacet', ID: 'Objects', Label: 'Alle angelegten Objekte', Target: 'objects/@UI.PresentationVariant' }
 annotate GeneratorService.Runs with @UI.Facets: [
-  { $Type: 'UI.ReferenceFacet', ID: 'Main',     Label: 'Lauf',                  Target: '@UI.FieldGroup#Main' },
-  { $Type: 'UI.ReferenceFacet', ID: 'Partners', Label: 'Geschäftspartner',      Target: 'partners/@UI.PresentationVariant' },
-  { $Type: 'UI.ReferenceFacet', ID: 'Objects',  Label: 'Alle angelegten Objekte', Target: 'objects/@UI.PresentationVariant' }
+  { $Type: 'UI.ReferenceFacet', ID: 'Main',     Label: 'Lauf',             Target: '@UI.FieldGroup#Main' },
+  { $Type: 'UI.ReferenceFacet', ID: 'Partners', Label: 'Geschäftspartner', Target: 'partners/@UI.PresentationVariant' }
 ];
 
 // Geschaeftspartner des Laufs: eine Zeile je Person UND System.

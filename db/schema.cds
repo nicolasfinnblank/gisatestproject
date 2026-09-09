@@ -79,8 +79,12 @@ entity GeneratorData
 // zeigen sie auf echte S/4-Destinationen. Gemeinsame Konfiguration (nicht pro
 // Nutzer). Basis fuer Multi-System-Push und spaeter Copy.
 
-entity Systems : cuid
+entity Systems
 {
+    // Textschluessel (z.B. "s4d"), nicht UUID: so lassen sich Systeme in
+    // Seed-Daten, Tests und Aufrufen lesbar ansprechen. Wird beim Anlegen
+    // ueber die UI aus dem Namen abgeleitet (Kleinbuchstaben).
+    key ID      : String(40);
     // Kurzer Anzeigename / Code, z.B. "S4D", "S4Q".
     name        : String(20)
         @mandatory;

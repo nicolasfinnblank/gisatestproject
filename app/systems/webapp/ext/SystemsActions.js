@@ -89,6 +89,8 @@ sap.ui.define([
             const sService = (oService.getValue() || "").trim();
             if (!sService) { oService.setValueState("Error"); return; }
             const oBody = {
+              // Schluessel aus dem Namen ableiten ("S4P" -> "s4p"), wie in den Seed-Daten.
+              ID: sName.toLowerCase().replace(/[^a-z0-9_-]/g, "-"),
               name: sName,
               description: (oDesc.getValue() || "").trim(),
               serviceName: sService,

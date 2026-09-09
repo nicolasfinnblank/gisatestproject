@@ -90,7 +90,9 @@ Bezeichnung („Testfall 4711"), Ersteller, Zeitpunkt, Systemen, Status.
   S4D+S4Q → MessageBox „Zum Tracking" → Lauf-Liste → Detailseite → Löschen in
   S4D (Status „partially deleted", Systeme „S4Q") → Kopieren S4Q→S4D (30
   Partner-Zeilen, 120 Objekte) → Quittungs-Detail im Generator → Systeme-Dialog.
-- **Auf BTP deployt (09.09., 11:05):** srv + approuter + drei Apps (HTML5-Repo
+- **Auf BTP deployt (09.09., 13:26, Stand 1e5bdef):** Systems-Schlüssel migriert
+  (HDI ok), Apps im HTML5-Repo 11:25 GMT, srv/approuter laufen.
+- Vorheriger Stand: **Auf BTP deployt (09.09., 11:05):** srv + approuter + drei Apps (HTML5-Repo
   08:54 GMT) + HDI-Schema (Runs neu, CreatedObjects/GeneratorData migriert, alte
   Views TrackedPartners/PartnerSystems entfernt). Beim Deploy war HANA gestoppt
   -> db-deployer 4x fehlgeschlagen -> `cf update-service gisa-hana -c

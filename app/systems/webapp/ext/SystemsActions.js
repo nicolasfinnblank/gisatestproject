@@ -55,11 +55,11 @@ sap.ui.define([
       const oApi = this;
       const oName = new Input({ placeholder: "z.B. S4P" });
       const oDesc = new Input({ placeholder: "Beschreibung (optional)" });
-      // Technischer Name: der CAP-Remote-Service bzw. die BTP-Destination, ueber
-      // die das System angesprochen wird. Solange kein echtes S/4 angebunden
-      // ist, stehen nur die beiden Mocks zur Verfuegung (als Vorschlag).
+      // Technischer Service: Name eines in package.json unter cds.requires
+      // konfigurierten Remote-Service (dort haengt die BTP-Destination dran).
+      // Solange kein echtes S/4 angebunden ist, gibt es nur die beiden Mocks.
       const oService = new Input({
-        placeholder: "Name der Destination / des Remote-Service",
+        placeholder: "z.B. BackendAPI_2 (aus package.json, cds.requires)",
         showSuggestion: true,
         width: "100%"
       });
@@ -74,7 +74,7 @@ sap.ui.define([
           items: [
             new Label({ text: "Name / Code:", labelFor: oName, required: true }), oName,
             new Label({ text: "Beschreibung:", labelFor: oDesc }), oDesc,
-            new Label({ text: "Technischer Name (Destination):", labelFor: oService, required: true }), oService,
+            new Label({ text: "Technischer Service:", labelFor: oService, required: true }), oService,
             oDefault
           ]
         }).addStyleClass("sapUiContentPadding"),

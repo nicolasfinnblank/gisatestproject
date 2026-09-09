@@ -240,12 +240,16 @@ Mocks in Produktion (`cds.features.[production].with_mocks`) und startet mit
 Destination da ist: `[production]`-Credentials für `BackendAPI_2/3` eintragen,
 `--with-mocks` aus dem Start-Skript nehmen, `db/mocks.cds` löschen.
 
-**Nächster Schritt (offen, 09.09.):** fachlicher Durchlauf im Launchpad mit
-dem Stand `feat/runs`: Generieren & anlegen -> Tracking -> Kopieren -> Löschen.
-Tracking- und Systeme-Kachel müssen auf die Work-Zone-Laufzeitadressen zeigen
-(s.u.). Danach feat/runs -> feat/approuter -> improvements mergen (Push nur auf
-Zuruf). Vor jedem Deploy: HANA läuft? (`cf service gisa-hana` zeigt nur den
-letzten Vorgang; im Zweifel `update-service … serviceStopped:false`).
+**Stand 09.09. (nach dem Launchpad-Test durch den Nutzer):** Generieren &
+Anlegen, Tracking, Personenseite, Kopieren, Löschen und die Systeme-App laufen
+im Launchpad. Danach wurde aufgeräumt (tote Pool-Annotationen, `passport`,
+Standalone-Approuter) — **diese drei Commits sind noch NICHT deployt**, sie
+ändern an den Apps nichts, aber das bereinigte `mta.yaml` ist noch nie
+ausgerollt worden. Vor der Abgabe einmal deployen und das Launchpad prüfen;
+dabei verschwindet die Approuter-App (gewollt).
+
+**Offen:** 32 Commits sind nicht gepusht (origin/improvements steht auf d27d52b).
+Reihenfolge: feat/runs → feat/approuter → improvements → push (nur auf Zuruf).
 
 **Warum Work Zone wochenlang scheiterte:** Work Zone verlangt seit 20.03.2025
 zwingend IAS über OIDC (SAP-Hinweis **KBA 3600432**), SAML genügt nicht. Der

@@ -112,6 +112,44 @@ enthält das Projekt bewusst nicht. Bis eine Destination zum echten S/4HANA-Syst
 vorliegt, laufen die Zielsysteme auch in der Cloud als Mocks. Details, Adressen
 und Stolperfallen stehen in [`HANDOFF.md`](HANDOFF.md).
 
+## Übergabe: was im Zielsystem anzupassen ist
+
+Der Code ist umgebungsneutral. Anzupassen sind nur Konfiguration und
+Berechtigungen:
+
+1. **Destination zum S/4HANA-System** im BTP-Cockpit anlegen (Connectivity →
+   Destinations): URL des OData-Service und die dort übliche Authentifizierung.
+2. **Remote-Service verdrahten** in `package.json` unter `cds.requires`. Der
+   Eintrag trägt den technischen Namen, den die App kennt, und verweist in
+   Produktion auf die Destination:
+
+   ```json
+   "BackendAPI_2": {
+     "kind": "odata",
+     "model": "srv/external/BackendAPI_2",
+     "[production]": {
+       "credentials": { "destination": "S4D", "path": "/<Pfad des OData-Service>" }
+     }
+   }
+   ```
+
+   Weitere Systeme bekommen weitere Einträge (z. B. `BackendAPI_4`).
+3. **Mocks entfernen**, sobald die echten Systeme hängen:
+   `cds.features["[production]"].with_mocks` löschen, im `start`-Skript
+   `--with-mocks` streichen, `db/mocks.cds` löschen. Wichtig: die acht dann
+   überflüssigen Tabellen in `db/undeploy.json` eintragen
+   (`src/gen/BackendAPI_*.hdbtable`), sonst bleiben sie in der HANA-Datenbank
+   zurück.
+4. **Zielsysteme pflegen** in der Systeme-App: Name (z. B. `S4D`), Beschreibung
+   und als *technischen Service* den Schlüssel aus Schritt 2. Vorbelegt sind die
+   beiden Mock-Systeme in `db/data/gisa.mdg-Systems.csv`.
+5. **Berechtigungen**: die Rollensammlung `Generator (…)` einer Benutzergruppe
+   aus dem Firmenverzeichnis zuweisen. Ohne sie sind die Apps sichtbar, liefern
+   aber keine Daten (bewusst: nur berechtigte Personen legen Testdaten an).
+6. **Launchpad**: Site in SAP Build Work Zone anlegen und die drei Apps als
+   Kacheln aufnehmen — in einer regulären Umgebung über den Content Explorer
+   des HTML5-Repositories, sonst manuell im Content Manager.
+
 ## Dokumentation
 
 Ein ausführliches Stand-Dokument für die Weiterarbeit (Architektur, verifizierte

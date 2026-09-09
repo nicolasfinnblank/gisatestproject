@@ -262,7 +262,7 @@ annotate GeneratorService.Systems with {
   ID          @UI.Hidden;
   name        @title: 'System';
   description @title: 'Beschreibung';
-  serviceName @title: 'Technischer Name (Destination)';
+  serviceName @title: 'Technischer Service';
   isDefault   @title: 'Standard';
 };
 

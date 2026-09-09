@@ -379,6 +379,10 @@ annotate GeneratorService.CreatedObjects with @UI.PresentationVariant: {
 //
 // --- Ziel-Systeme (Verwaltung) ---
 //
+// Kein Loeschen von Systemen ueber die UI: Laeufe verweisen per Name auf
+// ihr System, ein geloeschtes System liesse sie ohne Ziel zurueck.
+annotate GeneratorService.Systems with @Capabilities.DeleteRestrictions.Deletable: false;
+
 annotate GeneratorService.Systems with @UI.HeaderInfo: {
   TypeName: 'Zielsystem',
   TypeNamePlural: 'Zielsysteme',

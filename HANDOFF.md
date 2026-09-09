@@ -163,11 +163,13 @@ Bezeichnung („Testfall 4711"), Ersteller, Zeitpunkt, Systemen, Status.
    manifest `controlConfiguration`-Actions + Handler in `ext/*.js` (ruft Action
    bzw. macht POST per `fetch`). Auch Dialoge (Select/Input) werden hier in JS
    gebaut, nicht über FE-Parameterdialoge.
-3. **Lokaler Push/Copy braucht `--in-memory`**: `cds serve all --with-mocks`
-   gegen die persistente `db.sqlite` → Fehler `no such table: BackendAPI_2_Street`
-   (Mock-Tabellen nur bei `--in-memory` deployt). Auch `No credentials configured`
-   wenn `--with-mocks` fehlt. Für Verifikation immer
-   `cds serve all --with-mocks --in-memory --port 4005`.
+3. **Lokal reicht `npm run watch`** (verifiziert 09.09. mit frischem Klon +
+   `npm install`): `cds watch` mockt beide Backends automatisch, und seit
+   `db/mocks.cds` existiert, legt der Deploy die Mock-Tabellen auch in der
+   persistenten `db.sqlite` an. Der frühere Fehler `no such table:
+   BackendAPI_2_Street` (nur mit `--in-memory` lösbar) tritt nicht mehr auf.
+   Für einen frischen Stand `db.sqlite` löschen; `cds serve all` (ohne watch)
+   braucht weiterhin `--with-mocks`.
 4. **Copy: kein tiefes `$expand`** im OData-Mock (`Not supported: "houseNumber"`).
    Stattdessen flach in Schritten lesen (BP → Address → Street/City), siehe
    `copyRun` in service.js.

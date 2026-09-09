@@ -44,28 +44,34 @@ zwischen Systemen kopieren und im System wieder löschen.
 | `test/integration.test.js` | Integrationstests (22) |
 | `mta.yaml` | Deployment-Beschreibung für SAP BTP (Backend, DB, Fiori-Apps) |
 
-## Lokale Entwicklung
+## Lokal starten (auch für Kollegen)
 
-Voraussetzung: Node.js und die CAP-Tools (`npm i -g @sap/cds-dk`).
+Voraussetzung: **Node.js 20 oder neuer** (`node -v`). Die CAP-Tools werden als
+Projekt-Abhängigkeit mitinstalliert, eine globale Installation ist nicht nötig.
 
 ```bash
-npm install        # Abhängigkeiten installieren
-npm run watch      # App starten (cds watch)
+git clone <Repository-URL>
+cd Generator
+npm install
+npm run watch
 ```
 
-Der Server läuft auf <http://localhost:4004>. `cds watch` startet lokal mit
-SQLite und **mockt beide Zielsysteme automatisch** (unter
-`/odata/v4/backend-api-2` bzw. `…-3`), sodass Push, Copy und Delete vollständig
-funktionieren. Für den Browser-Test ohne persistente Datei:
-`npx cds serve all --with-mocks --in-memory`. Die Mock-Logik in
-`srv/external/_mockBackend.js` bildet die
+Der Server läuft auf <http://localhost:4004>, die drei Oberflächen unter:
+
+- Generator: <http://localhost:4004/generator/webapp/index.html>
+- Tracking: <http://localhost:4004/tracking/webapp/index.html>
+- Zielsysteme: <http://localhost:4004/systems/webapp/index.html>
+
+Lokal ist **keine Anmeldung** nötig (Entwicklungs-Authentifizierung `dummy`,
+Nutzername `privileged`). `cds watch` mockt beide Zielsysteme automatisch (unter
+`/odata/v4/backend-api-2` bzw. `…-3`), sodass Anlegen, Kopieren und Löschen
+vollständig funktionieren; die Daten liegen in `db.sqlite` und bleiben zwischen
+Neustarts erhalten. Die Mock-Logik in `srv/external/_mockBackend.js` bildet die
 Validierungen und die vom Backend vergebenen Nummern des echten Systems nach.
+Zum Zurücksetzen einfach `db.sqlite` löschen.
 
-Die Oberflächen sind erreichbar unter:
-
-- Generator: `/generator/webapp/index.html`
-- Tracking: `/tracking/webapp/index.html`
-- Zielsysteme: `/systems/webapp/index.html`
+Die Navigation zwischen den drei Apps funktioniert lokal über die Adresszeile;
+im Launchpad läuft sie über die Kacheln bzw. die Shell.
 
 ## Tests
 

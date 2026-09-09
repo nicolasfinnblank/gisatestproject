@@ -10,8 +10,7 @@
     "@sap/cds": "^9",
     "@sap/xsenv": ">=3.3.2 <3.3.3",
     "@sap/xssec": "^4",
-    "hdb": "^2.27.1",
-    "passport": "^0.7.0"
+    "hdb": "^2.27.1"
   },
   "devDependencies": {
     "@cap-js/cds-test": "^1.0.1",

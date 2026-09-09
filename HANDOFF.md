@@ -63,8 +63,8 @@ Bezeichnung („Testfall 4711"), Ersteller, Zeitpunkt, Systemen, Status.
 - FE-Apps: `/generator/webapp/index.html`, `/tracking/webapp/index.html`,
   `/systems/webapp/index.html`
 - Tests: `npm test` (22 Integrationstests, jest + cds.test)
-- Browser-Test lokal: `.claude/launch.json` (Config `cap-local`, Port 4004,
-  `--with-mocks --in-memory`); Server ggf. per Shell im Hintergrund starten.
+- Browser-Test lokal: `node_modules/.bin/cds serve all --with-mocks --in-memory
+  --port 4004` per Shell starten (s. Gotcha 7).
 
 ## Git-Stand
 - `main` = Original (unberührt), auf GitHub.
@@ -90,14 +90,12 @@ Bezeichnung („Testfall 4711"), Ersteller, Zeitpunkt, Systemen, Status.
   S4D+S4Q → MessageBox „Zum Tracking" → Lauf-Liste → Detailseite → Löschen in
   S4D (Status „partially deleted", Systeme „S4Q") → Kopieren S4Q→S4D (30
   Partner-Zeilen, 120 Objekte) → Quittungs-Detail im Generator → Systeme-Dialog.
-- **Auf BTP deployt (09.09., 13:26, Stand 1e5bdef):** Systems-Schlüssel migriert
-  (HDI ok), Apps im HTML5-Repo 11:25 GMT, srv/approuter laufen.
-- Vorheriger Stand: **Auf BTP deployt (09.09., 11:05):** srv + approuter + drei Apps (HTML5-Repo
-  08:54 GMT) + HDI-Schema (Runs neu, CreatedObjects/GeneratorData migriert, alte
-  Views TrackedPartners/PartnerSystems entfernt). Beim Deploy war HANA gestoppt
+- **Auf BTP deployt und im Launchpad abgenommen (09.09., Stand 1e5bdef):**
+  HDI-Migration (Runs neu, CreatedObjects/GeneratorData erweitert, alte Views
+  TrackedPartners/PartnerSystems entfernt, Systems-Schlüssel auf String),
+  srv + approuter + drei Apps. Beim ersten Versuch war HANA gestoppt
   -> db-deployer 4x fehlgeschlagen -> `cf update-service gisa-hana -c
   '{"data":{"serviceStopped":false}}'` (10 Min) -> `cf deploy -i <op-id> -a retry`.
-  Fachlicher Durchlauf im Launchpad steht noch aus (Nutzer, IAS-Login).
 
 ## Architektur / Schlüsseldateien
 - `db/schema.cds`: Namespace `gisa.mdg`. Pools (StreetNames, Cities, …),
@@ -141,7 +139,7 @@ Bezeichnung („Testfall 4711"), Ersteller, Zeitpunkt, Systemen, Status.
   gemockten Ziel-Backends (eindeutige Namen, getrennte In-Memory-Tabellen).
   In `package.json` unter `cds.requires` als zwei `odata`-Services registriert.
 - `app/annotations.cds`: FE-Annotationen für GeneratorData (+ `placements`),
-  Pools, Runs (LineItem, PresentationVariant createdAt desc, Facets Lauf /
+  Runs (LineItem, PresentationVariant createdAt desc, Facets Lauf /
   Geschäftspartner / Alle Objekte), RunPartners (+ `#Placement`-Variante),
   CreatedObjects, Systems. Facets zeigen auf `partners/@UI.PresentationVariant`
   bzw. `objects/@UI.PresentationVariant` (sortiert).
@@ -172,15 +170,15 @@ Bezeichnung („Testfall 4711"), Ersteller, Zeitpunkt, Systemen, Status.
    `cds serve all --with-mocks --in-memory --port 4005`.
 4. **Copy: kein tiefes `$expand`** im OData-Mock (`Not supported: "houseNumber"`).
    Stattdessen flach in Schritten lesen (BP → Address → Street/City), siehe
-   `copyData` in service.js.
+   `copyRun` in service.js.
 5. **Console-"Fehler"** (Component-preload 404, i18n_en 404, lrep/flex 404,
    [FUTURE FATAL] PropertyInfo, DeleteEntry) sind ALLE harmlos/normal im Dev.
 6. **`-dbg.js` in Console** = nur Source-Map-Namen, KEIN langsamer Debug-Modus.
 7. **UI selbst verifizieren** (statt Nutzer testen lassen): Server per Shell
    `node_modules/.bin/cds serve all --with-mocks --in-memory --port 4004` im
-   Hintergrund, dann eingebauter Browser (`preview_start` mit URL; die
-   launch.json-Variante scheitert an fehlendem Desktop-Zugriff des Preview-
-   Prozesses). **Nach Code-Änderungen echten Reload erzwingen**
+   Hintergrund, dann eingebauter Browser (`preview_start` mit URL; eine
+   `.claude/launch.json` funktioniert NICHT — der Preview-Prozess darf nicht in
+   den Desktop-Ordner lesen, EPERM). **Nach Code-Änderungen echten Reload erzwingen**
    (`location.reload()`): eine `navigate` auf dieselbe URL mit anderem Hash lädt
    NICHT neu — alte JS/Metadaten bleiben im Speicher.
 8. UI5 lädt vom CDN ui5.sap.com (erstmalig evtl. langsam, dann gecacht).

@@ -290,6 +290,52 @@ annotate GeneratorService.RunPartners with @UI.PresentationVariant: {
   Visualizations: ['@UI.LineItem']
 };
 
+// Detailseite einer Person: Stammdaten + die vier Objekte im System.
+annotate GeneratorService.RunPartners with @UI.HeaderInfo: {
+  TypeName: 'Geschäftspartner',
+  TypeNamePlural: 'Geschäftspartner',
+  Title: { Value: lastName },
+  Description: { Value: firstName }
+};
+
+annotate GeneratorService.RunPartners with @UI.FieldGroup #Person: {
+  $Type: 'UI.FieldGroupType', Data: [
+    { $Type: 'UI.DataField', Value: firstName },
+    { $Type: 'UI.DataField', Value: lastName },
+    { $Type: 'UI.DataField', Value: streetName },
+    { $Type: 'UI.DataField', Value: houseNumber },
+    { $Type: 'UI.DataField', Value: postCode },
+    { $Type: 'UI.DataField', Value: cityName },
+    { $Type: 'UI.DataField', Value: system },
+    { $Type: 'UI.DataField', Value: objectKey },
+    { $Type: 'UI.DataField', Value: status, Criticality: statusCriticality },
+    { $Type: 'UI.DataField', Value: sourceSystem },
+    { $Type: 'UI.DataField', Value: createdAt },
+    { $Type: 'UI.DataField', Value: deletedAt }
+  ]
+};
+
+annotate GeneratorService.RunPartners with @UI.Facets: [
+  { $Type: 'UI.ReferenceFacet', ID: 'Person',  Label: 'Geschäftspartner',        Target: '@UI.FieldGroup#Person' },
+  { $Type: 'UI.ReferenceFacet', ID: 'Objects', Label: 'Angelegte Objekte im System', Target: 'objects/@UI.PresentationVariant#Object' }
+];
+
+// Objekte EINER Person (System ist auf der Seite schon bekannt).
+annotate GeneratorService.CreatedObjects with @UI.LineItem #Object: [
+  { $Type: 'UI.DataField', Value: objectType },
+  { $Type: 'UI.DataField', Value: objectKey },
+  { $Type: 'UI.DataField', Value: status, Criticality: statusCriticality },
+  { $Type: 'UI.DataField', Value: createdAt },
+  { $Type: 'UI.DataField', Value: deletedAt }
+];
+
+// Feste Reihenfolge: Geschaeftspartner, Adresse, Strasse, Stadt (alphabetisch
+// nach Objekttyp waere City zuerst - unpraktisch).
+annotate GeneratorService.CreatedObjects with @UI.PresentationVariant #Object: {
+  SortOrder: [{ Property: objectType, Descending: false }],
+  Visualizations: ['@UI.LineItem#Object']
+};
+
 // Kompakte Variante fuer die Quittung im Generator (Person ist dort schon bekannt).
 annotate GeneratorService.RunPartners with @UI.LineItem #Placement: [
   { $Type: 'UI.DataField', Value: system },

@@ -49,6 +49,11 @@ service GeneratorService {
     @readonly
     entity RunPartners as projection on my.CreatedObjects {
         *,
+        // Die vier Objekte dieser Person in diesem System (Street, City,
+        // Address, BusinessPartner) - fuer die Detailseite der Person.
+        objects : Association to many CreatedObjects
+            on objects.run.ID = run.ID and objects.sourceConcatID = sourceConcatID
+               and objects.system = system,
         // Farbe fuer die UI: 3 = gruen (angelegt), 2 = gelb (teilweise), 1 = rot (geloescht)
         case status when 'created' then 3 when 'deleted' then 1 else 2 end as statusCriticality : Integer
     } where objectType = 'BusinessPartner';

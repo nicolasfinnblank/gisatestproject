@@ -75,6 +75,11 @@
           "pattern": "Runs({key}):?query:",
           "name": "RunsObjectPage",
           "target": "RunsObjectPage"
+        },
+        {
+          "pattern": "Runs({key})/partners({key2}):?query:",
+          "name": "RunPartnersObjectPage",
+          "target": "RunPartnersObjectPage"
         }
       ],
       "targets": {
@@ -141,7 +146,24 @@
                     "rowCountMode": "Auto"
                   }
                 }
+              },
+              "navigation": {
+                "partners": {
+                  "detail": {
+                    "route": "RunPartnersObjectPage"
+                  }
+                }
               }
+            }
+          }
+        },
+        "RunPartnersObjectPage": {
+          "type": "Component",
+          "id": "RunPartnersObjectPage",
+          "name": "sap.fe.templates.ObjectPage",
+          "options": {
+            "settings": {
+              "contextPath": "/Runs/partners"
             }
           }
         }

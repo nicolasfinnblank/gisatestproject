@@ -16,8 +16,8 @@ zwischen Systemen kopieren und im System wieder löschen.
   (`generateAndCreate`), Reihenfolge `Street → City → Address → BusinessPartner`
   je System.
 - **Tracking** – zentral für alle Nutzer: Liste der Läufe, Detailseite mit den
-  Geschäftspartnern je System (mit Nummer) und der Tabelle `System | Objekttyp |
-  Schlüssel | Status` aller angelegten Objekte.
+  Geschäftspartnern je System (Name, Adresse, Nummer, Status); je Person eine
+  Seite mit den vier im System angelegten Objekten und ihren Schlüsseln.
 - **Kopieren** – überträgt die Geschäftspartner eines Laufs aus einem System in
   ein weiteres (`copyRun`); die Kopien hängen am selben Lauf.
 - **Löschen** – entfernt die Objekte eines Laufs in einem System wieder
@@ -41,7 +41,7 @@ zwischen Systemen kopieren und im System wieder löschen.
 | `app/generator/webapp/` | UI 1: Lauf anlegen (Dialog) + Quittung des letzten Laufs |
 | `app/tracking/webapp/` | UI 2: Läufe mit Geschäftspartnern und Objekten; Kopieren/Löschen |
 | `app/systems/webapp/` | UI 3: Zielsysteme verwalten |
-| `test/integration.test.js` | Integrationstests (18) |
+| `test/integration.test.js` | Integrationstests (22) |
 | `mta.yaml` | Deployment-Beschreibung für SAP BTP (Backend, DB, Fiori-Apps) |
 
 ## Lokale Entwicklung
@@ -70,7 +70,7 @@ Die Oberflächen sind erreichbar unter:
 ## Tests
 
 ```bash
-npm test           # 18 Integrationstests (jest + cds.test)
+npm test           # 22 Integrationstests (jest + cds.test)
 ```
 
 Geprüft werden u. a. Authentifizierung/Rollen, Generieren & anlegen in einem

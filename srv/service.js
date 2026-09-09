@@ -121,15 +121,20 @@ module.exports = class GeneratorService extends cds.ApplicationService {
         // Aktion: Generieren UND anlegen (ein Schritt, ergibt einen Lauf)
         // ------------------------------------------------------------------
         this.on('generateAndCreate', async (req) => {
+            // Ausserhalb des try: im Fehlerfall wissen wir, was schon angelegt wurde.
+            const tracked = [];
+            let runId, label = '';
+            const owner = req.user.id || 'anonymous';
+            const now = new Date().toISOString();
             try {
                 const anzahl = req.data.anzahl == null ? 10 : Number(req.data.anzahl);
-                if (!Number.isInteger(anzahl) || anzahl < 1 || anzahl > 1000) {
-                    return req.error(400, 'Anzahl muss zwischen 1 und 1000 liegen.');
+                // Obergrenze 500: je Person und System 4 OData-Aufrufe; mehr wuerde
+                // hinter dem Approuter in den Timeout laufen.
+                if (!Number.isInteger(anzahl) || anzahl < 1 || anzahl > 500) {
+                    return req.error(400, 'Anzahl muss zwischen 1 und 500 liegen.');
                 }
-                const owner = req.user.id || 'anonymous';
-                const now = new Date().toISOString();
-                const label = (req.data.label || '').trim()
-                    || `Testdaten ${now.slice(0, 16).replace('T', ' ')}`;
+                label = ((req.data.label || '').trim()
+                    || `Testdaten ${now.slice(0, 16).replace('T', ' ')}`).slice(0, 100);
 
                 // Zielsysteme: gewaehlte (Liste von Systems.ID) oder das Default-System.
                 let ids = req.data.systems;
@@ -155,7 +160,7 @@ module.exports = class GeneratorService extends cds.ApplicationService {
                 }
 
                 // 2. Lauf anlegen
-                const runId = cds.utils.uuid();
+                runId = cds.utils.uuid();
                 await INSERT.into(Runs).entries({
                     ID: runId, label, createdBy: owner, createdAt: now,
                     partnerCount: anzahl, systems: '', status: 'created'
@@ -183,7 +188,6 @@ module.exports = class GeneratorService extends cds.ApplicationService {
                 // 5. In jedem Zielsystem anlegen. Die Hausnummer wird je Person EINMAL
                 //    festgelegt, damit sie in allen Systemen dieselbe Adresse hat.
                 const meta = { runId, owner, now };
-                const tracked = [];
                 for (const sys of targets) {
                     const backend = await cds.connect.to(sys.serviceName);
                     for (const p of persons) {
@@ -197,9 +201,28 @@ module.exports = class GeneratorService extends cds.ApplicationService {
 
                 const names = targets.map(s => s.name).join(', ');
                 console.log(`✅ Lauf "${label}": ${anzahl} Geschäftspartner in ${names} angelegt (${tracked.length} Objekte).`);
-                return `Lauf "${label}": ${anzahl} Geschäftspartner in ${names} angelegt.`;
+                return { ok: true, runID: runId, message: `Lauf "${label}": ${anzahl} Geschäftspartner in ${names} angelegt.` };
             } catch (err) {
                 console.error('❌ Anlegen fehlgeschlagen:', err);
+                // Ein Fehler (req.error) wuerde die Transaktion zurueckrollen: Lauf,
+                // Quittung und Protokoll waeren weg, die im SAP-System bereits
+                // angelegten Objekte aber nicht. Deshalb bei Teil-Erfolg KEIN Fehler,
+                // sondern: Protokoll der bisherigen Objekte sichern, Lauf markieren
+                // und ok=false zurueckgeben (die UI zeigt eine Warnung).
+                if (tracked.length && runId) {
+                    const partners = new Set(tracked.filter(t => t.objectType === 'BusinessPartner')
+                        .map(t => `${t.system}|${t.sourceConcatID}`)).size;
+                    await INSERT.into(CreatedObjects).entries(tracked);
+                    await UPDATE(Runs, runId).with({
+                        label: `${label} (abgebrochen)`.slice(0, 100), partnerCount: partners
+                    });
+                    await refreshRun(runId);
+                    return {
+                        ok: false, runID: runId,
+                        message: `Anlegen nach ${partners} Geschäftspartner(n) abgebrochen: ${err.message} `
+                            + `Die bereits angelegten Objekte sind im Tracking als Lauf "${label} (abgebrochen)" protokolliert.`
+                    };
+                }
                 return req.error(500, `Anlegen fehlgeschlagen: ${err.message}`);
             }
         });

@@ -59,7 +59,8 @@ describe('GISA Master Data Generator', () => {
 
     it('erlaubt Nutzer mit Rolle Generator', async () => {
       const { data } = await POST(`${SRV}/generateAndCreate`, { anzahl: 3, label: 'Auth-Test' }, asAlice);
-      expect(data.value).to.match(/3 Geschäftspartner in S4D/);
+      expect(data.ok).to.equal(true);
+      expect(data.message).to.match(/3 Geschäftspartner in S4D/);
     });
   });
 
@@ -138,6 +139,35 @@ describe('GISA Master Data Generator', () => {
     it('lehnt unbekannte Zielsysteme und unsinnige Anzahl ab (400)', async () => {
       await expectStatus(POST(`${SRV}/generateAndCreate`, { anzahl: 1, systems: ['nope'] }, asAlice), 400);
       await expectStatus(POST(`${SRV}/generateAndCreate`, { anzahl: 0 }, asAlice), 400);
+      await expectStatus(POST(`${SRV}/generateAndCreate`, { anzahl: 501 }, asAlice), 400);
+    });
+  });
+
+  describe('Abbruch mitten im Anlegen', () => {
+    it('sichert Lauf + bereits angelegte Objekte, antwortet ok=false mit Hinweis', async () => {
+      // Das Ziel-Backend (S4Q = BackendAPI_3) beim 3. Geschaeftspartner scheitern lassen.
+      const backend = cds.services.BackendAPI_3;
+      let n = 0;
+      const hook = (req) => { if (++n === 3) req.reject(400, 'simulierter Backend-Fehler'); };
+      backend.before('CREATE', 'BusinessPartner', hook);
+      try {
+        const { data } = await POST(`${SRV}/generateAndCreate`, { anzahl: 5, label: 'Abbruch', systems: ['s4q'] }, asErin);
+        expect(data.ok).to.equal(false);
+        expect(data.message).to.match(/nach 2 Geschäftspartner/);
+        expect(data.message).to.match(/Abbruch \(abgebrochen\)/);
+
+        // Der Lauf existiert mit den 2 vollstaendig angelegten Personen (8 Objekte).
+        const runs = (await GET(`${SRV}/Runs?$filter=label eq 'Abbruch (abgebrochen)'&$expand=objects`, asErin)).data.value;
+        expect(runs.length).to.equal(1);
+        expect(runs[0].systems).to.equal('S4Q');
+        expect(runs[0].partnerCount).to.equal(2);
+        expect(runs[0].objects.length).to.equal(8);
+      } finally {
+        // Hook wieder entfernen (Handler-Liste des Mock-Service bereinigen).
+        const list = backend._handlers?.before || [];
+        const i = list.findIndex(h => h.handler === hook);
+        if (i >= 0) list.splice(i, 1);
+      }
     });
   });
 
@@ -224,10 +254,32 @@ describe('GISA Master Data Generator', () => {
   });
 
   describe('Zielsysteme', () => {
+    it('einzelnes System ist per Schluessel lesbar (Detailseite)', async () => {
+      const { data } = await GET(`${SRV}/Systems('s4d')`, asAlice);
+      expect(data.name).to.equal('S4D');
+    });
+
+    it('neues System anlegen (Schluessel = Name in Kleinbuchstaben, wie die UI ihn bildet)', async () => {
+      const { status } = await POST(`${SRV}/Systems`,
+        { ID: 's4p', name: 'S4P', description: 'Prod (Mock)', serviceName: 'BackendAPI_2', isDefault: false }, asAlice);
+      expect(status).to.equal(201);
+      const { data } = await GET(`${SRV}/Systems('s4p')`, asAlice);
+      expect(data.serviceName).to.equal('BackendAPI_2');
+    });
+
+    it('Anlegen in einem System mit unbekanntem Service schlaegt fehl, ohne einen Lauf zu hinterlassen', async () => {
+      await POST(`${SRV}/Systems`,
+        { ID: 'kaputt', name: 'KAPUTT', serviceName: 'GibtEsNicht', isDefault: false }, asAlice);
+      const before = (await GET(`${SRV}/Runs?$count=true&$top=0`, asAlice)).data['@odata.count'];
+      await expectStatus(POST(`${SRV}/generateAndCreate`, { anzahl: 2, label: 'kaputt', systems: ['kaputt'] }, asAlice), 500);
+      const after = (await GET(`${SRV}/Runs?$count=true&$top=0`, asAlice)).data['@odata.count'];
+      expect(after).to.equal(before);
+    });
+
     it('stellt die konfigurierten Zielsysteme bereit (Default + zweites)', async () => {
       const systems = (await GET(`${SRV}/Systems`, asAlice)).data.value;
       const byName = Object.fromEntries(systems.map(s => [s.name, s]));
-      expect(byName).to.have.keys(['S4D', 'S4Q']);
+      expect(Boolean(byName.S4D && byName.S4Q)).to.equal(true);
       expect(byName.S4D.isDefault).to.equal(true);
       expect(byName.S4Q.serviceName).to.equal('BackendAPI_3');
     });

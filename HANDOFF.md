@@ -24,9 +24,13 @@ Bezeichnung („Testfall 4711"), Ersteller, Zeitpunkt, Systemen, Status.
   welchem System sie mit welcher Nummer liegt (`placements`).
 - **Tracking-App:** Liste = Läufe (alle Nutzer sehen alle, Spalte „Erstellt
   von" — „Centralized"), Standard-Sortierung neueste zuerst. Detailseite =
-  Kopf (Bezeichnung, Systeme, Status) + Tabelle **Geschäftspartner** (eine Zeile
-  je Person UND System, mit Nummer) + Tabelle **Alle angelegten Objekte**
-  (System | Objekttyp | Schlüssel | Status | Kopiert aus — Folie 16).
+  Kopf (Bezeichnung, Systeme, Status) + Tabelle **Geschäftspartner** (GridTable,
+  eine Zeile je Person UND System: Vorname, Nachname, Adresse, System, Nummer,
+  Status). Klick auf eine Person -> **Personenseite** (Stammdaten + „Angelegte
+  Objekte im System": BP, Adresse, Straße, Stadt mit Nummer/Status). Der
+  frühere dritte Reiter „Alle angelegten Objekte" (flache Tabelle System|
+  Objekt|Schlüssel, Folie 16) ist seit 09.09. **ausgeblendet** (Nutzer will es
+  mit Christian klären; Wiedereinblenden = eine Facet-Zeile in annotations.cds).
   Kopfzeilen-Knöpfe: „In weiteres System kopieren" (`copyRun`, Quelle = System
   in dem der Lauf liegt, Ziel = eines in dem er nicht liegt; Kopien hängen am
   SELBEN Lauf mit `sourceSystem`) und „In System löschen" (`deleteRun`, löscht
@@ -35,8 +39,19 @@ Bezeichnung („Testfall 4711"), Ersteller, Zeitpunkt, Systemen, Status.
   created | partially deleted | deleted; `Runs.systems` = Systeme mit noch
   aktiven Objekten (vom Service nach jeder Aktion neu berechnet).
 - **Systeme-App:** Katalog; „Neues System" mit Freitext „Technischer Name
-  (Destination)" (Vorschläge BackendAPI_2/3). Für GISA: hier den Namen der
+  (Destination)" (Vorschläge BackendAPI_2/3); Schlüssel = Name in
+  Kleinbuchstaben (`Systems.ID` ist String(40), nicht UUID — sonst scheiterte die
+  Detailseite an „Invalid value: s4d"). Löschen von Systemen ist in der UI
+  deaktiviert (`@Capabilities.DeleteRestrictions`). Für GISA: hier den Namen der
   echten Destination eintragen.
+- **Teilabbruch beim Anlegen:** `generateAndCreate` liefert `CreateResult
+  {ok, message, runID}`. Bricht das Zielsystem mittendrin ab, wird KEIN Fehler
+  geworfen (der würde die Transaktion samt Protokoll zurückrollen, die im S/4
+  angelegten Objekte blieben unbekannt), sondern: Protokoll der bisherigen
+  Objekte gesichert, Lauf heißt „… (abgebrochen)", `ok=false` -> UI zeigt
+  Warnung. Eine zweite DB-Transaktion im Handler ist KEINE Option (SQLite:
+  eine Verbindung -> Deadlock). Obergrenze 500 Personen je Lauf (Approuter-
+  Timeout bei 4 OData-Aufrufen je Person und System).
 - Bewusst NICHT umgesetzt: Kopieren/Löschen einzelner Personen (Granularität =
   Lauf, so denken Tester); weitere Objekttypen (die API bietet genau vier).
 
@@ -47,7 +62,7 @@ Bezeichnung („Testfall 4711"), Ersteller, Zeitpunkt, Systemen, Status.
 - Starten: `cds watch` → http://localhost:4004
 - FE-Apps: `/generator/webapp/index.html`, `/tracking/webapp/index.html`,
   `/systems/webapp/index.html`
-- Tests: `npm test` (18 Integrationstests, jest + cds.test)
+- Tests: `npm test` (22 Integrationstests, jest + cds.test)
 - Browser-Test lokal: `.claude/launch.json` (Config `cap-local`, Port 4004,
   `--with-mocks --in-memory`); Server ggf. per Shell im Hintergrund starten.
 
@@ -67,9 +82,10 @@ Bezeichnung („Testfall 4711"), Ersteller, Zeitpunkt, Systemen, Status.
   wenn fertig → pushen. Erst lokal committen, später pushen (**nur auf Zuruf**).
 
 ## Was funktioniert (verifiziert 09.09.2026, lokal)
-- Backend: **18/18 Tests grün** (Auth, Generieren+Anlegen in 1 und 2 Systemen,
+- Backend: **22/22 Tests grün** (Auth, Generieren+Anlegen in 1 und 2 Systemen,
   Quittung, zentrales Tracking, Kopieren je Lauf, Löschen mit Status, 403 bei
-  fremden Läufen, Validierung).
+  fremden Läufen, Validierung, Teilabbruch mit gesichertem Protokoll, System-
+  Detail/Anlage, unbekannter Service ohne Lauf-Leiche).
 - FE-UI (im eingebauten Browser durchgeklickt): Generator-Dialog → Lauf in
   S4D+S4Q → MessageBox „Zum Tracking" → Lauf-Liste → Detailseite → Löschen in
   S4D (Status „partially deleted", Systeme „S4Q") → Kopieren S4Q→S4D (30
@@ -103,7 +119,9 @@ Bezeichnung („Testfall 4711"), Ersteller, Zeitpunkt, Systemen, Status.
   person, meta)` (legt Street→City→Address→BP an, liefert 4 Protokoll-Zeilen),
   `refreshRun(runId)` (berechnet `systems`/`status` des Laufs neu), `ownRun(req,
   id)` (lädt Lauf, `req.reject(403)` bei fremdem Lauf — wird VOR dem try/catch
-  aufgerufen, damit der 500er-Catch den Status nicht verschluckt).
+  aufgerufen, damit der 500er-Catch den Status nicht verschluckt). `RunPartners`
+  hat zusätzlich `objects` (die 4 Objekte der Person im System), `CreatedObjects`
+  ein berechnetes `objectOrder` (BP=1, Adresse=2, Straße=3, Stadt=4) zum Sortieren.
   - generateAndCreate: validiert Anzahl 1..1000, legt `Runs`-Zeile an, würfelt
     Personen, ersetzt eigene Quittung, legt je System an, protokolliert.
     *Number-Felder NICHT mitsenden (server-vergeben). Hausnummer im Muster

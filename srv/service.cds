@@ -66,7 +66,10 @@ service GeneratorService {
 
     // Ein Schritt: Personen aus den Pools generieren UND in allen gewaehlten
     // Systemen anlegen. Ergebnis ist ein neuer Lauf. systems leer -> Default.
-    action generateAndCreate(anzahl : Integer, label : String, systems : many String) returns String;
+    // Ergebnis: ok=false, wenn das Zielsystem mittendrin abgebrochen hat - dann
+    // sind Lauf und die bis dahin angelegten Objekte trotzdem protokolliert.
+    type CreateResult { ok : Boolean; message : String; runID : UUID; }
+    action generateAndCreate(anzahl : Integer, label : String, systems : many String) returns CreateResult;
 
     // Kopiert die Geschaeftspartner eines Laufs (inkl. Adresse) aus einem
     // System, in dem der Lauf liegt, in ein weiteres System. Nur eigene Laeufe.

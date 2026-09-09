@@ -56,7 +56,8 @@ sap.ui.define([
       if (!r.ok) {
         throw new Error((t.error && t.error.message) || ("HTTP " + r.status));
       }
-      return t.value;
+      // Unbound Actions liefern entweder { value: "..." } oder direkt ein Objekt.
+      return t.value !== undefined ? t.value : t;
     });
   }
 
@@ -94,7 +95,7 @@ sap.ui.define([
           return;
         }
 
-        const oCount = new StepInput({ value: 10, min: 1, max: 1000, step: 1, width: "100%" });
+        const oCount = new StepInput({ value: 10, min: 1, max: 500, step: 1, width: "100%" });
         const oLabel = new Input({ value: defaultLabel(), placeholder: "z.B. Testfall 4711", width: "100%" });
         const oBox = new MultiComboBox({ width: "100%" });
         aSystems.forEach(function (s) {
@@ -127,17 +128,24 @@ sap.ui.define([
                 anzahl: oCount.getValue(),
                 label: (oLabel.getValue() || "").trim(),
                 systems: aIds
-              }).then(function (msg) {
+              }).then(function (res) {
                 oDialog.close();
                 refresh(oApi);
-                MessageBox.success(msg || "Angelegt.", {
-                  title: "Fertig",
+                const oOpts = {
                   actions: ["Zum Tracking", MessageBox.Action.OK],
                   emphasizedAction: "Zum Tracking",
                   onClose: function (sAction) {
                     if (sAction === "Zum Tracking") { navigateTo("tracking"); }
                   }
-                });
+                };
+                if (res && res.ok === false) {
+                  // Teil-Erfolg: das Zielsystem hat mittendrin abgebrochen.
+                  oOpts.title = "Abgebrochen";
+                  MessageBox.warning(res.message, oOpts);
+                } else {
+                  oOpts.title = "Fertig";
+                  MessageBox.success((res && res.message) || "Angelegt.", oOpts);
+                }
               }).catch(function (e) {
                 oDialog.setBusy(false);
                 MessageBox.error("Anlegen fehlgeschlagen: " + e.message);

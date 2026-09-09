@@ -74,8 +74,12 @@ Bezeichnung („Testfall 4711"), Ersteller, Zeitpunkt, Systemen, Status.
   S4D+S4Q → MessageBox „Zum Tracking" → Lauf-Liste → Detailseite → Löschen in
   S4D (Status „partially deleted", Systeme „S4Q") → Kopieren S4Q→S4D (30
   Partner-Zeilen, 120 Objekte) → Quittungs-Detail im Generator → Systeme-Dialog.
-- **Auf BTP noch NICHT deployt** (cf-Token war abgelaufen). Cloud läuft noch mit
-  dem Stand 63beb3a (alte Logik: Generieren/Pushen getrennt).
+- **Auf BTP deployt (09.09., 11:05):** srv + approuter + drei Apps (HTML5-Repo
+  08:54 GMT) + HDI-Schema (Runs neu, CreatedObjects/GeneratorData migriert, alte
+  Views TrackedPartners/PartnerSystems entfernt). Beim Deploy war HANA gestoppt
+  -> db-deployer 4x fehlgeschlagen -> `cf update-service gisa-hana -c
+  '{"data":{"serviceStopped":false}}'` (10 Min) -> `cf deploy -i <op-id> -a retry`.
+  Fachlicher Durchlauf im Launchpad steht noch aus (Nutzer, IAS-Login).
 
 ## Architektur / Schlüsseldateien
 - `db/schema.cds`: Namespace `gisa.mdg`. Pools (StreetNames, Cities, …),
@@ -215,12 +219,12 @@ Mocks in Produktion (`cds.features.[production].with_mocks`) und startet mit
 Destination da ist: `[production]`-Credentials für `BackendAPI_2/3` eintragen,
 `--with-mocks` aus dem Start-Skript nehmen, `db/mocks.cds` löschen.
 
-**Nächster Schritt (offen, 09.09.):** `cf login` (Token abgelaufen), dann
-`npx mbt build` + `cf deploy … -f` mit dem Stand `feat/runs`. Das HDI-Deploy
-legt `Runs` an, erweitert `CreatedObjects`/`GeneratorData` um Spalten und
-entfernt die alten Views (`undeploy.json`). Danach fachlicher Durchlauf im
-Launchpad: Generieren & anlegen -> Tracking -> Kopieren -> Löschen. Tracking-
-und Systeme-Kachel müssen auf die Work-Zone-Laufzeitadressen zeigen (s.u.).
+**Nächster Schritt (offen, 09.09.):** fachlicher Durchlauf im Launchpad mit
+dem Stand `feat/runs`: Generieren & anlegen -> Tracking -> Kopieren -> Löschen.
+Tracking- und Systeme-Kachel müssen auf die Work-Zone-Laufzeitadressen zeigen
+(s.u.). Danach feat/runs -> feat/approuter -> improvements mergen (Push nur auf
+Zuruf). Vor jedem Deploy: HANA läuft? (`cf service gisa-hana` zeigt nur den
+letzten Vorgang; im Zweifel `update-service … serviceStopped:false`).
 
 **Warum Work Zone wochenlang scheiterte:** Work Zone verlangt seit 20.03.2025
 zwingend IAS über OIDC (SAP-Hinweis **KBA 3600432**), SAML genügt nicht. Der

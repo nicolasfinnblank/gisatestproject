@@ -7,37 +7,41 @@ zwischen Systemen kopieren und im System wieder löschen.
 
 ## Features
 
-- **Generieren** – würfelt aus den Pools (Straßen, Städte, Namen, PLZ …) eine
-  einstellbare Anzahl Testkunden zusammen (`generateTestCustomers`).
-- **Pushen in mehrere Systeme** – überträgt die Datensätze per OData ins gewählte
-  Zielsystem (`pushToBackend`), Reihenfolge `Street → City → Address →
-  BusinessPartner`.
-- **Tracking** – protokolliert je angelegtem Objekt `System | Objekttyp |
-  Schlüssel` (Entity `CreatedObjects`).
-- **Kopieren** – überträgt die eigenen Datensätze von einem System in ein anderes
-  (`copyData`).
-- **Löschen** – entfernt die eigenen, im System angelegten Objekte wieder
-  (`deleteFromBackend`).
-- **Mehrbenutzer-sicher** – jede Zeile gehört ihrem Ersteller (`createdBy =
-  $user`); Nutzer sehen und verändern nur ihre eigenen Daten.
+- **Lauf** – jede Testdaten-Erstellung ist ein Lauf mit Bezeichnung (z. B.
+  „Testfall 4711"), Ersteller, Zeitpunkt, Systemen und Status. Kopieren und
+  Löschen wirken pro Lauf – so, wie Tester denken.
+- **Generieren & anlegen in einem Schritt** – Anzahl, Bezeichnung und ein oder
+  mehrere Zielsysteme wählen; die Personen werden aus den Pools (Straßen,
+  Städte, Namen, PLZ …) gewürfelt und sofort per OData angelegt
+  (`generateAndCreate`), Reihenfolge `Street → City → Address → BusinessPartner`
+  je System.
+- **Tracking** – zentral für alle Nutzer: Liste der Läufe, Detailseite mit den
+  Geschäftspartnern je System (mit Nummer) und der Tabelle `System | Objekttyp |
+  Schlüssel | Status` aller angelegten Objekte.
+- **Kopieren** – überträgt die Geschäftspartner eines Laufs aus einem System in
+  ein weiteres (`copyRun`); die Kopien hängen am selben Lauf.
+- **Löschen** – entfernt die Objekte eines Laufs in einem System wieder
+  (`deleteRun`); das Protokoll bleibt mit Status „deleted" erhalten.
+- **Mehrbenutzer-sicher** – Kopieren und Löschen nur für eigene Läufe; die
+  Quittung des letzten Laufs sieht nur der Ersteller.
 - **Fiori-Elements-UIs** – drei Oberflächen: Generator, Tracking, Zielsysteme.
 
 ## Projektstruktur
 
 | Ordner / Datei | Inhalt |
 |---|---|
-| `db/schema.cds` | Datenmodell: Pools, `GeneratorData`, `CreatedObjects`, `Systems` |
+| `db/schema.cds` | Datenmodell: Pools, `Runs`, `CreatedObjects`, `GeneratorData` (Quittung), `Systems` |
 | `db/data/*.csv` | Startdaten (Pools + Zielsysteme), beim Start geladen |
 | `srv/service.cds` | OData-Service-Definition (Entities + Actions) |
-| `srv/service.js` | Geschäftslogik (Generieren, Push, Copy, Delete) |
+| `srv/service.js` | Geschäftslogik (Generieren & anlegen, Kopieren, Löschen je Lauf) |
 | `srv/external/_mockBackend.js` | Gemeinsame Mock-Logik der Backends (nur Entwicklung) |
 | `srv/external/BackendAPI_2.*` | Modell + Mock des Zielsystems **S4D** |
 | `srv/external/BackendAPI_3.*` | Modell + Mock des Zielsystems **S4Q** |
 | `app/annotations.cds` | Fiori-Elements-Annotationen (Tabellen/Spalten) |
-| `app/generator/webapp/` | UI 1: Daten generieren + alle Aktionen |
-| `app/tracking/webapp/` | UI 2: Protokoll der angelegten Objekte |
+| `app/generator/webapp/` | UI 1: Lauf anlegen (Dialog) + Quittung des letzten Laufs |
+| `app/tracking/webapp/` | UI 2: Läufe mit Geschäftspartnern und Objekten; Kopieren/Löschen |
 | `app/systems/webapp/` | UI 3: Zielsysteme verwalten |
-| `test/integration.test.js` | Integrationstests (19) |
+| `test/integration.test.js` | Integrationstests (18) |
 | `mta.yaml` | Deployment-Beschreibung für SAP BTP (Backend, DB, Fiori-Apps) |
 
 ## Lokale Entwicklung
@@ -52,7 +56,9 @@ npm run watch      # App starten (cds watch)
 Der Server läuft auf <http://localhost:4004>. `cds watch` startet lokal mit
 SQLite und **mockt beide Zielsysteme automatisch** (unter
 `/odata/v4/backend-api-2` bzw. `…-3`), sodass Push, Copy und Delete vollständig
-funktionieren. Die Mock-Logik in `srv/external/_mockBackend.js` bildet die
+funktionieren. Für den Browser-Test ohne persistente Datei:
+`npx cds serve all --with-mocks --in-memory`. Die Mock-Logik in
+`srv/external/_mockBackend.js` bildet die
 Validierungen und die vom Backend vergebenen Nummern des echten Systems nach.
 
 Die Oberflächen sind erreichbar unter:
@@ -64,11 +70,12 @@ Die Oberflächen sind erreichbar unter:
 ## Tests
 
 ```bash
-npm test           # 19 Integrationstests (jest + cds.test)
+npm test           # 18 Integrationstests (jest + cds.test)
 ```
 
-Geprüft werden u. a. Authentifizierung/Rollen, Mehrbenutzer-Isolation,
-Generieren, Push ins richtige System, Copy und Delete.
+Geprüft werden u. a. Authentifizierung/Rollen, Generieren & anlegen in einem
+und in mehreren Systemen, zentrales Tracking, Kopieren und Löschen je Lauf
+(inkl. Status), Ablehnung fremder Läufe.
 
 ## Umgebungen
 
@@ -92,16 +99,12 @@ Bestandteile: `srv` (CAP-Service, Node.js), `db-deployer` (HANA-Schema),
 `app-deployer` (lädt die drei Fiori-Apps ins HTML5-Repository) sowie die
 Ressourcen XSUAA, HANA (hdi-shared), Destination und HTML5-Repo-Host.
 
-**Stand:** Backend und Datenbank laufen auf BTP; der Service antwortet auf
-`/service/generator/` mit HTTP 401 (erreichbar und korrekt geschützt).
-
-**Offen – Zugang zu den Oberflächen:** Die drei Fiori-Apps liegen im
-HTML5-Repository, es fehlt aber die Komponente, die sie ausliefert. Geplant ist
-SAP Build Work Zone (Launchpad mit Kacheln). Work Zone setzt inzwischen zwingend
-eine Anmeldung über SAP Cloud Identity Services (IAS) per OpenID Connect voraus
-(siehe SAP-Hinweis KBA 3600432); die reine SAML-Anmeldung genügt nicht mehr.
-Im BTP-Trial ist der IAS-Tenant zudem nur 14 Tage gültig. Alternative ohne
-IAS-Abhängigkeit wäre ein Standalone-Approuter — dann allerdings ohne Kacheln.
+**Stand:** Backend, Datenbank und die drei Fiori-Apps laufen auf BTP. Die
+Apps sind über SAP Build Work Zone (Launchpad mit drei Kacheln, Anmeldung über
+SAP Cloud Identity Services) und zusätzlich über einen Standalone-Approuter
+erreichbar. Bis eine Destination zum echten S/4HANA-System vorliegt, laufen die
+Zielsysteme auch in der Cloud als Mocks. Details, Adressen und Stolperfallen
+stehen in [`HANDOFF.md`](HANDOFF.md).
 
 ## Dokumentation
 

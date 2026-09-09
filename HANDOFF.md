@@ -8,8 +8,37 @@ SAP CAP (Node.js) Web-App auf SAP BTP. Generiert realistische Test-Stammdaten
 (Business Partner, Adressen, Namen) aus Daten-Pools und pusht sie per OData an
 SAP S/4HANA-Backends. Kann mehrere Zielsysteme verwalten, das Angelegte tracken,
 Daten zwischen Systemen kopieren und im System wieder löschen. Uni-Projekt mit
-GISA. Lokal SQLite, in Prod HANA. Fiori Elements UI. Aufgabenstellung als PDF
-(siehe "Offene Features").
+GISA. Lokal SQLite, in Prod HANA. Fiori Elements UI. Aufgabenstellung: GISA-
+Präsentation vom 07.04.2026 (Folie 16 „The idea", Folie 17 „The goal"), siehe
+Abschnitt „Fachliche Logik".
+
+## Fachliche Logik (Stand 09.09.2026, Branch `feat/runs`)
+Zentraler Begriff ist der **Lauf** (`Runs`) = eine Testdaten-Erstellung mit
+Bezeichnung („Testfall 4711"), Ersteller, Zeitpunkt, Systemen, Status.
+- **Generator-App:** EIN Dialog (Anzahl, Bezeichnung, Zielsysteme mit
+  Mehrfachauswahl, Standard vorbelegt) → Aktion `generateAndCreate` würfelt die
+  Personen aus den Pools UND legt sie sofort in allen gewählten Systemen an
+  (Street→City→Address→BusinessPartner je System). Kein separater Push mehr.
+  Die Liste darunter ist nur die **Quittung des letzten Laufs** (`GeneratorData`,
+  per Nutzer, wird beim nächsten Lauf ersetzt); Detailseite zeigt je Person, in
+  welchem System sie mit welcher Nummer liegt (`placements`).
+- **Tracking-App:** Liste = Läufe (alle Nutzer sehen alle, Spalte „Erstellt
+  von" — „Centralized"), Standard-Sortierung neueste zuerst. Detailseite =
+  Kopf (Bezeichnung, Systeme, Status) + Tabelle **Geschäftspartner** (eine Zeile
+  je Person UND System, mit Nummer) + Tabelle **Alle angelegten Objekte**
+  (System | Objekttyp | Schlüssel | Status | Kopiert aus — Folie 16).
+  Kopfzeilen-Knöpfe: „In weiteres System kopieren" (`copyRun`, Quelle = System
+  in dem der Lauf liegt, Ziel = eines in dem er nicht liegt; Kopien hängen am
+  SELBEN Lauf mit `sourceSystem`) und „In System löschen" (`deleteRun`, löscht
+  im Backend, setzt im Protokoll `status='deleted'` + `deletedAt` — Historie
+  bleibt). Beides nur für eigene Läufe (sonst 403). Lauf-Status:
+  created | partially deleted | deleted; `Runs.systems` = Systeme mit noch
+  aktiven Objekten (vom Service nach jeder Aktion neu berechnet).
+- **Systeme-App:** Katalog; „Neues System" mit Freitext „Technischer Name
+  (Destination)" (Vorschläge BackendAPI_2/3). Für GISA: hier den Namen der
+  echten Destination eintragen.
+- Bewusst NICHT umgesetzt: Kopieren/Löschen einzelner Personen (Granularität =
+  Lauf, so denken Tester); weitere Objekttypen (die API bietet genau vier).
 
 ## Setup & Befehle
 - Pfad: `/Users/magnusbuchwald/Desktop/Coding/Generator`
@@ -18,7 +47,9 @@ GISA. Lokal SQLite, in Prod HANA. Fiori Elements UI. Aufgabenstellung als PDF
 - Starten: `cds watch` → http://localhost:4004
 - FE-Apps: `/generator/webapp/index.html`, `/tracking/webapp/index.html`,
   `/systems/webapp/index.html`
-- Tests: `npm test` (19 Integrationstests, jest + cds.test)
+- Tests: `npm test` (18 Integrationstests, jest + cds.test)
+- Browser-Test lokal: `.claude/launch.json` (Config `cap-local`, Port 4004,
+  `--with-mocks --in-memory`); Server ggf. per Shell im Hintergrund starten.
 
 ## Git-Stand
 - `main` = Original (unberührt), auf GitHub.
@@ -29,63 +60,75 @@ GISA. Lokal SQLite, in Prod HANA. Fiori Elements UI. Aufgabenstellung als PDF
 - Erledigte Feature-Branches (bereits in improvements gemergt, können weg):
   `feat/fiori-elements-ui`, `feat/tracking`, `feat/multi-system`, `feat/copy`,
   `feat/delete`.
+- `feat/approuter` (von improvements): BTP-Deployment, Work Zone, Navigation,
+  Cloud-Mocks. `feat/runs` (von feat/approuter, 09.09.): Umbau auf Läufe (s.o.).
+  Reihenfolge zum Abschluss: feat/runs → feat/approuter → improvements mergen.
 - Arbeitsweise: pro Thema eigener Branch → in `improvements` mergen (Fast-Forward)
-  wenn fertig → pushen. Erst lokal committen, später pushen.
+  wenn fertig → pushen. Erst lokal committen, später pushen (**nur auf Zuruf**).
 
-## Was funktioniert (verifiziert)
-- Backend: **19/19 Tests grün** (Auth, Generieren, Multi-User-Isolation, Push,
-  Validierung, Tracking, Multi-System, Copy, Löschen).
-- FE-UI (mit Playwright/headless Chrome objektiv getestet):
-  - Generator-List-Report rendert; "Generieren" (Anzahl-Prompt) erzeugt Daten.
-  - "An Backend pushen" → Dialog mit **Mehrfachauswahl** der Zielsysteme →
-    Push in alle gewählten Backends.
-  - **Tracking-App:** "Daten kopieren" (Dialog **Von/Nach**, kopiert die eigenen
-    Partner ins Zielsystem) und "Im System löschen" (Warn-Dialog, löscht die
-    eigenen Objekte wieder). Seit 07.09. dort statt im Generator — beide
-    arbeiten auf den Tracking-Einträgen (`CreatedObjects`).
-  - "Tracking anzeigen" / "Systeme verwalten" / "Zurück" navigieren zwischen
-    den Apps (Ersatz fürs Launchpad).
-  - Systeme-App: Liste + "Neues System" (Dialog) legt per POST an.
+## Was funktioniert (verifiziert 09.09.2026, lokal)
+- Backend: **18/18 Tests grün** (Auth, Generieren+Anlegen in 1 und 2 Systemen,
+  Quittung, zentrales Tracking, Kopieren je Lauf, Löschen mit Status, 403 bei
+  fremden Läufen, Validierung).
+- FE-UI (im eingebauten Browser durchgeklickt): Generator-Dialog → Lauf in
+  S4D+S4Q → MessageBox „Zum Tracking" → Lauf-Liste → Detailseite → Löschen in
+  S4D (Status „partially deleted", Systeme „S4Q") → Kopieren S4Q→S4D (30
+  Partner-Zeilen, 120 Objekte) → Quittungs-Detail im Generator → Systeme-Dialog.
+- **Auf BTP noch NICHT deployt** (cf-Token war abgelaufen). Cloud läuft noch mit
+  dem Stand 63beb3a (alte Logik: Generieren/Pushen getrennt).
 
 ## Architektur / Schlüsseldateien
 - `db/schema.cds`: Namespace `gisa.mdg`. Pools (StreetNames, Cities, …),
-  `GeneratorData` (key concatID, + createdBy für Multi-User), `CreatedObjects`
-  (Tracking: system|objectType|objectKey|sourceConcatID|createdBy|createdAt),
+  `Runs` (label|createdBy|createdAt|partnerCount|systems|status, Composition
+  `objects`), `CreatedObjects` (run|system|sourceSystem|objectType|objectKey|
+  sourceConcatID|createdBy|createdAt|status|deletedAt + BP-Stammdaten),
+  `GeneratorData` (Quittung: key concatID, createdBy, run),
   `Systems` (Zielsystem-Katalog: name|description|serviceName|isDefault).
 - `db/data/gisa.mdg-Systems.csv`: Seed → **S4D** (Default, BackendAPI_2) und
   **S4Q** (BackendAPI_3).
 - `srv/service.cds`: Service `GeneratorService`, @path `/service/generator`,
-  @requires `Generator`. Actions: `generateTestCustomers(anzahl)`,
-  `pushToBackend(systems : many String)` (Mehrfachauswahl, leer = Default-System),
-  `copyData(sourceSystem, targetSystem)`, `deleteFromBackend(system)`.
-  Entities: Pools, `GeneratorData` (per-user), `CreatedObjects` (read-only,
-  per-user), `Systems` (CRUD, gemeinsam) sowie die beiden Tracking-Sichten
-  `TrackedPartners` (PARENT: eine Zeile je Person, `group by sourceConcatID`) und
-  `PartnerSystems` (CHILD: je System eine Zeile mit der dort vergebenen Nummer)
-  — zusammen bilden sie das 1:n-Tracking Person → Systeme.
-- `srv/service.js`: Logik.
-  - Push: wählt Zielsystem (oder Default) aus `Systems`, verbindet zu dessen
-    `serviceName`, legt Street→City→Address→BusinessPartner an, trackt unter
-    `sys.name`. *Number-Felder NICHT mitsenden (server-vergeben). Hausnummer
-    muss Muster `[0-9]{1,4}[a-z]` erfüllen.
-  - Copy: ermittelt aus `CreatedObjects` die eigenen BP-Keys im Quellsystem,
-    liest BP→Address→Street/City **flach** (kein $expand!) aus dem Quell-Backend,
-    legt sie im Ziel-Backend neu an, trackt unter Zielsystem.
-  - Delete: ermittelt aus `CreatedObjects` je Objekttyp die *Number, holt damit
-    die Backend-IDs und löscht **key-basiert** (BP→Address→Street→City); räumt
-    danach die Tracking-Einträge.
+  @requires `Generator`. Actions: `generateAndCreate(anzahl, label, systems : many
+  String)` (leer = Default-System), `copyRun(run, sourceSystem, targetSystem)`,
+  `deleteRun(run, system)`. Entities: Pools, `GeneratorData` (Quittung,
+  per-user, mit `placements`), `Runs` (read-only, ALLE Nutzer, mit `partners`
+  und `objects`), `CreatedObjects` (read-only, `@cds.redirection.target`),
+  `RunPartners` (= CreatedObjects where objectType='BusinessPartner'),
+  `Systems` (CRUD). Alle drei Protokoll-Sichten haben ein berechnetes
+  `statusCriticality` (3 grün/2 gelb/1 rot) für die Farbanzeige.
+- `srv/service.js`: Logik. Gemeinsame Helfer `createPersonIn(backend, sys,
+  person, meta)` (legt Street→City→Address→BP an, liefert 4 Protokoll-Zeilen),
+  `refreshRun(runId)` (berechnet `systems`/`status` des Laufs neu), `ownRun(req,
+  id)` (lädt Lauf, `req.reject(403)` bei fremdem Lauf — wird VOR dem try/catch
+  aufgerufen, damit der 500er-Catch den Status nicht verschluckt).
+  - generateAndCreate: validiert Anzahl 1..1000, legt `Runs`-Zeile an, würfelt
+    Personen, ersetzt eigene Quittung, legt je System an, protokolliert.
+    *Number-Felder NICHT mitsenden (server-vergeben). Hausnummer im Muster
+    `[0-9]{1,4}[a-z]` (Pool-Werte wie „88k" bleiben unverändert, sonst wird ein
+    Buchstabe angehängt) — je Person EINMAL festgelegt, gleich in allen Systemen.
+  - copyRun: BP-Keys des Laufs im Quellsystem (status created) aus dem
+    Protokoll, liest BP→Address→Street/City **flach** (kein $expand!) aus dem
+    Quell-Backend, legt im Ziel neu an, protokolliert am selben Lauf mit
+    `sourceSystem`.
+  - deleteRun: je Objekttyp die *Number → Backend-IDs → **key-basiert** löschen
+    (BP→Address→Street→City); setzt Protokoll auf `deleted`/`deletedAt`.
 - `srv/external/_mockBackend.js`: **geteilte** Mock-Logik (vergibt Nummern,
   erzwingt Validierung) für beide Backends.
 - `srv/external/BackendAPI_2.{csn,edmx,js}` + `BackendAPI_3.{csn,js}`: die zwei
   gemockten Ziel-Backends (eindeutige Namen, getrennte In-Memory-Tabellen).
   In `package.json` unter `cds.requires` als zwei `odata`-Services registriert.
-- `app/annotations.cds`: FE-Annotationen für GeneratorData, Pools, CreatedObjects,
-  Systems.
+- `app/annotations.cds`: FE-Annotationen für GeneratorData (+ `placements`),
+  Pools, Runs (LineItem, PresentationVariant createdAt desc, Facets Lauf /
+  Geschäftspartner / Alle Objekte), RunPartners (+ `#Placement`-Variante),
+  CreatedObjects, Systems. Facets zeigen auf `partners/@UI.PresentationVariant`
+  bzw. `objects/@UI.PresentationVariant` (sortiert).
 - `app/generator/webapp/`, `app/tracking/webapp/`, `app/systems/webapp/`: drei
-  eigenständige FE-Apps. Custom-Aktionen in je `ext/*.js`. Navigation zwischen
-  ihnen per `window.location.href` über `appUrl()`: erkennt am eigenen Pfad
-  BTP (`/gisamdg<app>/index.html`) vs. lokal (`/<app>/webapp/index.html`).
-  Jede App hat einen eigenen Intent (`generator|tracking|systems` / `display`).
+  eigenständige FE-Apps. Custom-Aktionen in je `ext/*.js`. Tracking:
+  Kopieren/Löschen sind **Object-Page-Kopfaktionen** (manifest
+  `content.header.actions`), der Handler bekommt den Binding-Context des Laufs
+  als 1. Parameter (`oContext.getObject()`). Navigation zwischen den Apps über
+  `navigateTo()`: im Launchpad per `CrossApplicationNavigation` (Intent
+  `<app>-display`), sonst per `appUrl()` (BTP `/gisamdg<app>/index.html` vs.
+  lokal `/<app>/webapp/index.html`).
 
 ## KRITISCHE Gotchas (NICHT wiederholen!)
 1. **Höhe-0-Bug**: FE-App rendert sonst in Container mit Höhe 0 = weiße Seite.
@@ -109,23 +152,25 @@ GISA. Lokal SQLite, in Prod HANA. Fiori Elements UI. Aufgabenstellung als PDF
 5. **Console-"Fehler"** (Component-preload 404, i18n_en 404, lrep/flex 404,
    [FUTURE FATAL] PropertyInfo, DeleteEntry) sind ALLE harmlos/normal im Dev.
 6. **`-dbg.js` in Console** = nur Source-Map-Namen, KEIN langsamer Debug-Modus.
-7. **UI selbst verifizieren** (statt Nutzer testen lassen): Playwright
-   (`playwright-core` + System-Chrome via `executablePath`) gegen Port 4005
-   (kein Livereload). NICHT `chrome --virtual-time-budget` (hängt wegen
-   Livereload-WebSocket). `page.on('dialog', d=>d.accept('5'))` für window.prompt;
-   Aktions-Dialoge sind In-Page (`.sapMDialog`), kein Browser-Dialog.
+7. **UI selbst verifizieren** (statt Nutzer testen lassen): Server per Shell
+   `node_modules/.bin/cds serve all --with-mocks --in-memory --port 4004` im
+   Hintergrund, dann eingebauter Browser (`preview_start` mit URL; die
+   launch.json-Variante scheitert an fehlendem Desktop-Zugriff des Preview-
+   Prozesses). **Nach Code-Änderungen echten Reload erzwingen**
+   (`location.reload()`): eine `navigate` auf dieselbe URL mit anderem Hash lädt
+   NICHT neu — alte JS/Metadaten bleiben im Speicher.
 8. UI5 lädt vom CDN ui5.sap.com (erstmalig evtl. langsam, dann gecacht).
 
-## Offene Features (aus der PDF-Aufgabenstellung)
-Alle Kern-Features UND das optionale **Löschen** sind umgesetzt: Generierung,
-Pools, OData-Push, Mass-Creation, **Tracking für mehrere Systeme**,
-**Multi-System**, **Copy**, **Löschen im System**, UIs. Noch offen (alles
-optional / Ausbau):
-- **mehr Objekttypen** ("multiple different master data entities"; aktuell
-  BusinessPartner + Adresse, von der PDF als Beispiele genannt).
-- **Building Blocks** zur UI-Verschönerung (Design nach Funktion).
-- **Destination zum echten S/4-System** (URL + Auth kommen von Betreuer
-  Christian). Bis dahin laufen Push/Copy/Delete gegen die lokalen Mocks.
+## Abgleich mit der Aufgabenstellung (Folien 16/17, geprüft 09.09.2026)
+Folie 17 Punkt für Punkt erfüllt: BTP-Web-App, mehrere Entitäten (die vier, die
+die gelieferte API kennt: Street, City, Address, BusinessPartner — Contract
+Account/Country gibt es in der API nicht), Datenpools, OData-Anlage,
+Massenanlage, Tracking für mehrere Systeme, Kopieren, UIs für Generierung und
+angelegte Entitäten, optional Löschen. Folie 16: Generator legt direkt im S/4 an
+(kein Zwischenschritt), Tabelle System|Object|Key mit eigener UI = Detailseite
+des Laufs. Einzige Ergänzung: der **Lauf** als Ordnungseinheit.
+Noch offen (Ausbau): **Destination zum echten S/4-System** (URL + Auth von
+Christian) — bis dahin laufen Anlegen/Kopieren/Löschen gegen die Mocks.
 
 ## BTP-Deployment (Branch `feat/approuter`, Stand 07.09.2026)
 Konto: Global Account `eb23aca2trial`, Subaccount `trial`
@@ -170,8 +215,12 @@ Mocks in Produktion (`cds.features.[production].with_mocks`) und startet mit
 Destination da ist: `[production]`-Credentials für `BackendAPI_2/3` eintragen,
 `--with-mocks` aus dem Start-Skript nehmen, `db/mocks.cds` löschen.
 
-**Noch nicht verifiziert:** fachlicher Durchlauf auf BTP mit den Cloud-Mocks
-(Generieren -> Push -> Tracking -> Kopieren -> Löschen).
+**Nächster Schritt (offen, 09.09.):** `cf login` (Token abgelaufen), dann
+`npx mbt build` + `cf deploy … -f` mit dem Stand `feat/runs`. Das HDI-Deploy
+legt `Runs` an, erweitert `CreatedObjects`/`GeneratorData` um Spalten und
+entfernt die alten Views (`undeploy.json`). Danach fachlicher Durchlauf im
+Launchpad: Generieren & anlegen -> Tracking -> Kopieren -> Löschen. Tracking-
+und Systeme-Kachel müssen auf die Work-Zone-Laufzeitadressen zeigen (s.u.).
 
 **Warum Work Zone wochenlang scheiterte:** Work Zone verlangt seit 20.03.2025
 zwingend IAS über OIDC (SAP-Hinweis **KBA 3600432**), SAML genügt nicht. Der

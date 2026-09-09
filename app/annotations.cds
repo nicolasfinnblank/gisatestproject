@@ -265,16 +265,19 @@ annotate GeneratorService.RunPartners with {
   deletedAt      @title: 'Gelöscht am';
 };
 
+// Eine Zeile je Geschaeftspartner (und System) mit ALLEN Daten der Person.
+// ![@UI.Importance]: #High sorgt dafuer, dass Fiori Elements die Spalten auch
+// in der Detailseiten-Tabelle alle anzeigt (statt sie als "unwichtig" auszublenden).
 annotate GeneratorService.RunPartners with @UI.LineItem: [
-  { $Type: 'UI.DataField', Value: lastName },
-  { $Type: 'UI.DataField', Value: firstName },
-  { $Type: 'UI.DataField', Value: system },
-  { $Type: 'UI.DataField', Value: objectKey },
-  { $Type: 'UI.DataField', Value: status, Criticality: statusCriticality },
-  { $Type: 'UI.DataField', Value: streetName },
-  { $Type: 'UI.DataField', Value: houseNumber },
-  { $Type: 'UI.DataField', Value: postCode },
-  { $Type: 'UI.DataField', Value: cityName }
+  { $Type: 'UI.DataField', Value: firstName,   ![@UI.Importance]: #High },
+  { $Type: 'UI.DataField', Value: lastName,    ![@UI.Importance]: #High },
+  { $Type: 'UI.DataField', Value: streetName,  ![@UI.Importance]: #High },
+  { $Type: 'UI.DataField', Value: houseNumber, ![@UI.Importance]: #High },
+  { $Type: 'UI.DataField', Value: postCode,    ![@UI.Importance]: #High },
+  { $Type: 'UI.DataField', Value: cityName,    ![@UI.Importance]: #High },
+  { $Type: 'UI.DataField', Value: system,      ![@UI.Importance]: #High },
+  { $Type: 'UI.DataField', Value: objectKey,   ![@UI.Importance]: #High },
+  { $Type: 'UI.DataField', Value: status, Criticality: statusCriticality, ![@UI.Importance]: #High }
 ];
 
 annotate GeneratorService.RunPartners with @UI.PresentationVariant: {

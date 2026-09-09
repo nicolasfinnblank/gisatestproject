@@ -132,6 +132,22 @@
                     }
                   }
                 }
+              },
+              "controlConfiguration": {
+                "partners/@com.sap.vocabularies.UI.v1.LineItem": {
+                  "tableSettings": {
+                    "type": "GridTable",
+                    "selectionMode": "None",
+                    "rowCountMode": "Auto"
+                  }
+                },
+                "objects/@com.sap.vocabularies.UI.v1.LineItem": {
+                  "tableSettings": {
+                    "type": "GridTable",
+                    "selectionMode": "None",
+                    "rowCountMode": "Auto"
+                  }
+                }
               }
             }
           }

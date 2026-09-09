@@ -1,12 +1,15 @@
 sap.ui.define([
   "sap/m/MessageToast",
+  "sap/m/MessageBox",
   "sap/m/Dialog",
   "sap/m/Button",
+  "sap/m/Input",
+  "sap/m/StepInput",
   "sap/m/MultiComboBox",
   "sap/ui/core/Item",
   "sap/m/Label",
   "sap/m/VBox"
-], function (MessageToast, Dialog, Button, MultiComboBox, Item, Label, VBox) {
+], function (MessageToast, MessageBox, Dialog, Button, Input, StepInput, MultiComboBox, Item, Label, VBox) {
   "use strict";
 
   // Adresse der Schwester-Apps. Lokal liegen sie unter /<app>/webapp/index.html,
@@ -34,7 +37,6 @@ sap.ui.define([
     }
     window.location.href = appUrl(sApp);
   }
-
 
   // Adresse des CAP-Service RELATIV zur App (wie der Service-Pfad im manifest.json).
   // Auf BTP leitet der jeweilige Approuter <app>/service/generator/* an das
@@ -72,29 +74,28 @@ sap.ui.define([
     } catch (e) { /* notfalls 'Go' druecken */ }
   }
 
+  // Vorschlag fuer die Bezeichnung: "Testdaten 09.09.2026 14:30".
+  function defaultLabel() {
+    var d = new Date();
+    var pad = function (n) { return (n < 10 ? "0" : "") + n; };
+    return "Testdaten " + pad(d.getDate()) + "." + pad(d.getMonth() + 1) + "." + d.getFullYear()
+      + " " + pad(d.getHours()) + ":" + pad(d.getMinutes());
+  }
+
   return {
-    // Testdaten aus den Pools erzeugen.
+    // EIN Schritt: Anzahl + Bezeichnung + Zielsysteme waehlen, dann generiert
+    // der Service die Personen aus den Pools und legt sie sofort in allen
+    // gewaehlten Systemen an. Ergebnis ist ein Lauf (siehe Tracking).
     onGenerate: function () {
       const oApi = this;
-      const sVal = window.prompt("Wie viele Datensätze generieren?", "10");
-      if (sVal === null) { return; }
-      const iCount = parseInt(sVal, 10) || 10;
-      callAction("generateTestCustomers", { anzahl: iCount })
-        .then(function (msg) {
-          MessageToast.show(msg || "Generiert");
-          refresh(oApi);
-        })
-        .catch(function (e) { MessageToast.show("Fehler: " + e.message); });
-    },
-
-    // Push: ein ODER MEHRERE Zielsysteme waehlen, dann pushToBackend(systems) rufen.
-    onPush: function () {
       loadSystems().then(function (aSystems) {
         if (!aSystems.length) {
-          MessageToast.show("Keine Zielsysteme konfiguriert.");
+          MessageToast.show("Keine Zielsysteme konfiguriert (siehe 'Systeme verwalten').");
           return;
         }
 
+        const oCount = new StepInput({ value: 10, min: 1, max: 1000, step: 1, width: "100%" });
+        const oLabel = new Input({ value: defaultLabel(), placeholder: "z.B. Testfall 4711", width: "100%" });
         const oBox = new MultiComboBox({ width: "100%" });
         aSystems.forEach(function (s) {
           oBox.addItem(new Item({
@@ -106,20 +107,41 @@ sap.ui.define([
         if (oDefault) { oBox.setSelectedKeys([oDefault.ID]); }
 
         const oDialog = new Dialog({
-          title: "An SAP-System(e) pushen",
+          title: "Testdaten generieren & anlegen",
+          contentWidth: "28rem",
           content: new VBox({
-            items: [ new Label({ text: "Zielsysteme (Mehrfachauswahl):", labelFor: oBox }), oBox ]
+            items: [
+              new Label({ text: "Anzahl Geschäftspartner:", labelFor: oCount }), oCount,
+              new Label({ text: "Bezeichnung des Laufs:", labelFor: oLabel }), oLabel,
+              new Label({ text: "Zielsysteme (Mehrfachauswahl):", labelFor: oBox }), oBox
+            ]
           }).addStyleClass("sapUiContentPadding"),
           beginButton: new Button({
-            text: "Pushen",
+            text: "Anlegen",
             type: "Emphasized",
             press: function () {
               const aIds = oBox.getSelectedKeys();
               if (!aIds.length) { MessageToast.show("Bitte mindestens ein Zielsystem wählen."); return; }
-              oDialog.close();
-              callAction("pushToBackend", { systems: aIds })
-                .then(function (msg) { MessageToast.show(msg || "Gepusht"); })
-                .catch(function (e) { MessageToast.show("Fehler: " + e.message); });
+              oDialog.setBusy(true);
+              callAction("generateAndCreate", {
+                anzahl: oCount.getValue(),
+                label: (oLabel.getValue() || "").trim(),
+                systems: aIds
+              }).then(function (msg) {
+                oDialog.close();
+                refresh(oApi);
+                MessageBox.success(msg || "Angelegt.", {
+                  title: "Fertig",
+                  actions: ["Zum Tracking", MessageBox.Action.OK],
+                  emphasizedAction: "Zum Tracking",
+                  onClose: function (sAction) {
+                    if (sAction === "Zum Tracking") { navigateTo("tracking"); }
+                  }
+                });
+              }).catch(function (e) {
+                oDialog.setBusy(false);
+                MessageBox.error("Anlegen fehlgeschlagen: " + e.message);
+              });
             }
           }),
           endButton: new Button({ text: "Abbrechen", press: function () { oDialog.close(); } }),
@@ -129,8 +151,7 @@ sap.ui.define([
       }).catch(function (e) { MessageToast.show("Fehler: " + e.message); });
     },
 
-    // Zur Tracking-Liste. Dort liegen Kopieren und Loeschen, weil beide auf
-    // den Tracking-Eintraegen arbeiten.
+    // Zur Tracking-Liste (Laeufe). Dort liegen Kopieren und Loeschen.
     onShowTracking: function () {
       navigateTo("tracking");
     },

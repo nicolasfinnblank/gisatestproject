@@ -68,45 +68,35 @@
       "routes": [
         {
           "pattern": ":?query:",
-          "name": "TrackedPartnersList",
-          "target": "TrackedPartnersList"
+          "name": "RunsList",
+          "target": "RunsList"
         },
         {
-          "pattern": "TrackedPartners({key}):?query:",
-          "name": "TrackedPartnersObjectPage",
-          "target": "TrackedPartnersObjectPage"
+          "pattern": "Runs({key}):?query:",
+          "name": "RunsObjectPage",
+          "target": "RunsObjectPage"
         }
       ],
       "targets": {
-        "TrackedPartnersList": {
+        "RunsList": {
           "type": "Component",
-          "id": "TrackedPartnersList",
+          "id": "RunsList",
           "name": "sap.fe.templates.ListReport",
           "options": {
             "settings": {
-              "entitySet": "TrackedPartners",
+              "entitySet": "Runs",
               "variantManagement": "None",
               "initialLoad": true,
               "navigation": {
-                "TrackedPartners": {
+                "Runs": {
                   "detail": {
-                    "route": "TrackedPartnersObjectPage"
+                    "route": "RunsObjectPage"
                   }
                 }
               },
               "controlConfiguration": {
                 "@com.sap.vocabularies.UI.v1.LineItem": {
                   "actions": {
-                    "copy": {
-                      "press": "gisamdg.tracking.ext.TrackingActions.onCopy",
-                      "text": "Daten kopieren",
-                      "enabled": true
-                    },
-                    "deleteInSystem": {
-                      "press": "gisamdg.tracking.ext.TrackingActions.onDelete",
-                      "text": "Im System löschen",
-                      "enabled": true
-                    },
                     "backToGenerator": {
                       "press": "gisamdg.tracking.ext.TrackingActions.onBackToGenerator",
                       "text": "Zum Generator",
@@ -118,13 +108,31 @@
             }
           }
         },
-        "TrackedPartnersObjectPage": {
+        "RunsObjectPage": {
           "type": "Component",
-          "id": "TrackedPartnersObjectPage",
+          "id": "RunsObjectPage",
           "name": "sap.fe.templates.ObjectPage",
           "options": {
             "settings": {
-              "entitySet": "TrackedPartners"
+              "entitySet": "Runs",
+              "content": {
+                "header": {
+                  "actions": {
+                    "copy": {
+                      "press": "gisamdg.tracking.ext.TrackingActions.onCopy",
+                      "text": "In weiteres System kopieren",
+                      "enabled": true,
+                      "visible": true
+                    },
+                    "delete": {
+                      "press": "gisamdg.tracking.ext.TrackingActions.onDelete",
+                      "text": "In System löschen",
+                      "enabled": true,
+                      "visible": true
+                    }
+                  }
+                }
+              }
             }
           }
         }

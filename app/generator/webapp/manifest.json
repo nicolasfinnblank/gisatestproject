@@ -98,12 +98,7 @@
                   "actions": {
                     "generate": {
                       "press": "gisamdg.generator.ext.GeneratorActions.onGenerate",
-                      "text": "Generieren",
-                      "enabled": true
-                    },
-                    "push": {
-                      "press": "gisamdg.generator.ext.GeneratorActions.onPush",
-                      "text": "An Backend pushen",
+                      "text": "Generieren & anlegen",
                       "enabled": true
                     },
                     "showTracking": {
@@ -118,7 +113,8 @@
                     }
                   }
                 }
-              }
+              },
+              "initialLoad": true
             }
           }
         },

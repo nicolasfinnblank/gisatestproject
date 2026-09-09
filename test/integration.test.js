@@ -1,6 +1,6 @@
 const cds = require('@sap/cds');
 
-// Auth fuer die Tests: drei Nutzer mit/ohne Rolle (wie beim manuellen Test).
+// Auth fuer die Tests: mehrere Nutzer mit/ohne Rolle (wie beim manuellen Test).
 // Wird vor cds.test gesetzt, damit der Test-Server unter mocked-Auth laeuft.
 cds.env.requires.auth = {
   kind: 'mocked',
@@ -10,12 +10,11 @@ cds.env.requires.auth = {
     carol:   { password: 'carol',   roles: ['Generator'] },
     dave:    { password: 'dave',    roles: ['Generator'] },
     erin:    { password: 'erin',    roles: ['Generator'] },
-    fred:    { password: 'fred',    roles: ['Generator'] },
     mallory: { password: 'mallory', roles: [] }
   }
 };
 
-// 'serve all --with-mocks' startet den Server inkl. lokalem BackendAPI_2-Mock
+// 'serve all --with-mocks' startet den Server inkl. lokaler Backend-Mocks
 // (genau wie 'cds watch'); '--in-memory' gibt jedem Testlauf eine frische DB.
 const { GET, POST, expect } = cds.test('serve', 'all', '--with-mocks', '--in-memory');
 
@@ -24,11 +23,11 @@ const asBob     = { auth: { username: 'bob',     password: 'bob'     } };
 const asCarol   = { auth: { username: 'carol',   password: 'carol'   } };
 const asDave    = { auth: { username: 'dave',    password: 'dave'    } };
 const asErin    = { auth: { username: 'erin',    password: 'erin'    } };
-const asFred    = { auth: { username: 'fred',    password: 'fred'    } };
 const asMallory = { auth: { username: 'mallory', password: 'mallory' } };
 
 const SRV = '/service/generator';
-const BACKEND = '/odata/v4/backend-api-2';
+const BACKEND2 = '/odata/v4/backend-api-2';   // S4D
+const BACKEND3 = '/odata/v4/backend-api-3';   // S4Q
 
 // Hilfsfunktion: Status-Code einer erwartet fehlschlagenden Anfrage pruefen
 async function expectStatus(promise, status) {
@@ -40,151 +39,191 @@ async function expectStatus(promise, status) {
   }
 }
 
+// Neuesten Lauf des Nutzers (mit Objekten) holen.
+async function latestRun(auth, user) {
+  const { data } = await GET(
+    `${SRV}/Runs?$filter=createdBy eq '${user}'&$orderby=createdAt desc&$top=1&$expand=objects,partners`, auth);
+  return data.value[0];
+}
+
 describe('GISA Master Data Generator', () => {
 
   describe('Autorisierung', () => {
     it('lehnt Anfragen ohne Login ab (401)', async () => {
-      await expectStatus(POST(`${SRV}/generateTestCustomers`, { anzahl: 1 }), 401);
+      await expectStatus(POST(`${SRV}/generateAndCreate`, { anzahl: 1 }), 401);
     });
 
     it('lehnt Nutzer ohne Rolle ab (403)', async () => {
-      await expectStatus(POST(`${SRV}/generateTestCustomers`, { anzahl: 1 }, asMallory), 403);
+      await expectStatus(POST(`${SRV}/generateAndCreate`, { anzahl: 1 }, asMallory), 403);
     });
 
     it('erlaubt Nutzer mit Rolle Generator', async () => {
-      const { data } = await POST(`${SRV}/generateTestCustomers`, { anzahl: 3 }, asAlice);
-      expect(data.value).to.match(/3/);
+      const { data } = await POST(`${SRV}/generateAndCreate`, { anzahl: 3, label: 'Auth-Test' }, asAlice);
+      expect(data.value).to.match(/3 Geschäftspartner in S4D/);
     });
   });
 
-  describe('Generieren', () => {
-    it('erzeugt genau die angeforderte Anzahl Zeilen', async () => {
-      await POST(`${SRV}/generateTestCustomers`, { anzahl: 5 }, asAlice);
-      const { data } = await GET(`${SRV}/GeneratorData`, asAlice);
-      expect(data.value.length).to.equal(5);
-    });
-  });
+  describe('Generieren und Anlegen (ein Schritt)', () => {
+    it('legt einen Lauf mit der angeforderten Anzahl im Default-System an', async () => {
+      await POST(`${SRV}/generateAndCreate`, { anzahl: 5, label: 'Testfall 4711' }, asAlice);
+      const run = await latestRun(asAlice, 'alice');
 
-  describe('Multi-User-Isolation', () => {
-    it('Nutzer sehen nur eigene Daten und loeschen sich nicht gegenseitig', async () => {
-      await POST(`${SRV}/generateTestCustomers`, { anzahl: 4 }, asAlice);
-      await POST(`${SRV}/generateTestCustomers`, { anzahl: 7 }, asBob);
+      expect(run.label).to.equal('Testfall 4711');
+      expect(run.partnerCount).to.equal(5);
+      expect(run.systems).to.equal('S4D');            // Default-System
+      expect(run.status).to.equal('created');
+      expect(run.partners.length).to.equal(5);         // eine Zeile je Person
+      expect(run.objects.length).to.equal(20);         // 5 x (Street, City, Address, BP)
 
-      const aliceRows = (await GET(`${SRV}/GeneratorData`, asAlice)).data.value;
-      const bobRows   = (await GET(`${SRV}/GeneratorData`, asBob)).data.value;
-
-      expect(aliceRows.length).to.equal(4);   // bobs Generieren hat alice nicht geloescht
-      expect(bobRows.length).to.equal(7);
-      // alice sieht ausschliesslich eigene Zeilen
-      expect([...new Set(aliceRows.map(r => r.createdBy))]).to.eql(['alice']);
-    });
-  });
-
-  describe('Push ans Backend', () => {
-    it('pusht nur die eigenen Zeilen und sie kommen im Backend an', async () => {
-      await POST(`${SRV}/generateTestCustomers`, { anzahl: 3 }, asAlice);
-      const { data } = await POST(`${SRV}/pushToBackend`, {}, asAlice);
-      expect(data.value).to.match(/3/);
-
-      const bp = (await GET(`${BACKEND}/BusinessPartner`, asAlice)).data.value;
-      expect(bp.length).to.be.at.least(3);
-    });
-
-    it('erzeugte Hausnummern erfuellen das Backend-Muster [0-9]{1,4}[a-z]', async () => {
-      await POST(`${SRV}/generateTestCustomers`, { anzahl: 5 }, asAlice);
-      await POST(`${SRV}/pushToBackend`, {}, asAlice);
-
-      const addresses = (await GET(`${BACKEND}/Address?$select=houseNumber`, asAlice)).data.value;
-      expect(addresses.length).to.be.at.least(5);
-      for (const a of addresses) {
-        expect(a.houseNumber).to.match(/^[0-9]{1,4}[a-z]$/);
-      }
-    });
-  });
-
-  describe('Tracking der angelegten Objekte', () => {
-    // Hinweis: CreatedObjects ist eine Historie und wird (anders als GeneratorData)
-    // nicht geleert. Da sich die In-Memory-DB ueber die Suite akkumuliert, pruefen
-    // wir Zuwaechse (Deltas) statt absoluter Zaehlungen.
-    const count = async (auth) => (await GET(`${SRV}/CreatedObjects`, auth)).data.value.length;
-
-    it('protokolliert je gepushtem Kunden 4 Objekte mit System, Typ und Schluessel', async () => {
-      const before = await count(asAlice);
-      await POST(`${SRV}/generateTestCustomers`, { anzahl: 3 }, asAlice);
-      await POST(`${SRV}/pushToBackend`, {}, asAlice);
-
-      const tracked = (await GET(`${SRV}/CreatedObjects`, asAlice)).data.value;
-      // 3 Kunden x 4 Objekte (Street, City, Address, BusinessPartner)
-      expect(tracked.length - before).to.equal(12);
-
-      const types = [...new Set(tracked.map(t => t.objectType))].sort();
+      const types = [...new Set(run.objects.map(o => o.objectType))].sort();
       expect(types).to.eql(['Address', 'BusinessPartner', 'City', 'Street']);
-
-      for (const t of tracked) {
-        expect(t.system).to.equal('S4D');  // Default-Zielsystem
-        expect(t.objectKey).to.be.a('string').and.not.equal('');
-        expect(t.createdBy).to.equal('alice');
+      for (const o of run.objects) {
+        expect(o.objectKey).to.be.a('string').and.not.equal('');
+        expect(o.createdBy).to.equal('alice');
+        expect(o.status).to.equal('created');
       }
     });
 
-    it('zeigt jedem Nutzer nur sein eigenes Tracking (Multi-User-sicher)', async () => {
-      const aliceBefore = await count(asAlice);
-      const bobBefore   = await count(asBob);
+    it('vergibt eine Bezeichnung, wenn keine angegeben ist', async () => {
+      await POST(`${SRV}/generateAndCreate`, { anzahl: 1 }, asAlice);
+      const run = await latestRun(asAlice, 'alice');
+      expect(run.label).to.match(/^Testdaten /);
+    });
 
-      await POST(`${SRV}/generateTestCustomers`, { anzahl: 2 }, asAlice);
-      await POST(`${SRV}/pushToBackend`, {}, asAlice);
-      await POST(`${SRV}/generateTestCustomers`, { anzahl: 1 }, asBob);
-      await POST(`${SRV}/pushToBackend`, {}, asBob);
+    it('die Daten kommen im Backend an, Hausnummern im Muster [0-9]{1,4}[a-z]', async () => {
+      const before = (await GET(`${BACKEND2}/BusinessPartner`, asAlice)).data.value.length;
+      await POST(`${SRV}/generateAndCreate`, { anzahl: 4 }, asAlice);
+      const after = (await GET(`${BACKEND2}/BusinessPartner`, asAlice)).data.value.length;
+      expect(after - before).to.equal(4);
 
-      const aliceTracked = (await GET(`${SRV}/CreatedObjects`, asAlice)).data.value;
-      const bobTracked   = (await GET(`${SRV}/CreatedObjects`, asBob)).data.value;
+      const addresses = (await GET(`${BACKEND2}/Address?$select=houseNumber`, asAlice)).data.value;
+      for (const a of addresses) expect(a.houseNumber).to.match(/^[0-9]{1,4}[a-z]$/);
+    });
 
-      expect(aliceTracked.length - aliceBefore).to.equal(8);  // 2 x 4
-      expect(bobTracked.length - bobBefore).to.equal(4);       // 1 x 4
-      // alice sieht ausschliesslich eigene Eintraege (bobs Push taucht nicht auf)
-      expect([...new Set(aliceTracked.map(t => t.createdBy))]).to.eql(['alice']);
+    it('legt in MEHREREN Systemen an: gleiche Person, je System eine Nummer', async () => {
+      await POST(`${SRV}/generateAndCreate`, { anzahl: 2, label: 'Multi', systems: ['s4d', 's4q'] }, asErin);
+      const run = await latestRun(asErin, 'erin');
+
+      expect(run.systems).to.equal('S4D, S4Q');
+      expect(run.partners.length).to.equal(4);          // 2 Personen x 2 Systeme
+      expect(run.objects.length).to.equal(16);
+
+      // Dieselbe Person (sourceConcatID) liegt in beiden Systemen mit derselben Adresse.
+      const byPerson = {};
+      for (const p of run.partners) (byPerson[p.sourceConcatID] ??= []).push(p);
+      expect(Object.keys(byPerson).length).to.equal(2);
+      for (const rows of Object.values(byPerson)) {
+        expect(rows.map(r => r.system).sort()).to.eql(['S4D', 'S4Q']);
+        expect(rows[0].houseNumber).to.equal(rows[1].houseNumber);
+        expect(rows[0].objectKey).to.not.equal(rows[1].objectKey);
+      }
+    });
+
+    it('Quittung (GeneratorData) zeigt nur den letzten eigenen Lauf, mit Platzierungen', async () => {
+      await POST(`${SRV}/generateAndCreate`, { anzahl: 4, label: 'alt' }, asBob);
+      await POST(`${SRV}/generateAndCreate`, { anzahl: 2, label: 'neu', systems: ['s4d', 's4q'] }, asBob);
+
+      const rows = (await GET(`${SRV}/GeneratorData?$expand=placements,run`, asBob)).data.value;
+      expect(rows.length).to.equal(2);                          // nur der letzte Lauf
+      expect([...new Set(rows.map(r => r.run.label))]).to.eql(['neu']);
+      for (const r of rows) {
+        expect(r.createdBy).to.equal('bob');
+        expect(r.placements.map(p => p.system).sort()).to.eql(['S4D', 'S4Q']);
+      }
+      // bobs Quittung ist von alice nicht sichtbar
+      const aliceRows = (await GET(`${SRV}/GeneratorData`, asAlice)).data.value;
+      expect(aliceRows.every(r => r.createdBy === 'alice')).to.equal(true);
+    });
+
+    it('lehnt unbekannte Zielsysteme und unsinnige Anzahl ab (400)', async () => {
+      await expectStatus(POST(`${SRV}/generateAndCreate`, { anzahl: 1, systems: ['nope'] }, asAlice), 400);
+      await expectStatus(POST(`${SRV}/generateAndCreate`, { anzahl: 0 }, asAlice), 400);
     });
   });
 
-  describe('Tracking-Sicht (Geschäftspartner, 1:n)', () => {
-    it('zeigt einen Eintrag je Geschäftspartner mit Stammdaten + System-Tabelle', async () => {
-      await POST(`${SRV}/generateTestCustomers`, { anzahl: 2 }, asErin);
-      await POST(`${SRV}/pushToBackend`, {}, asErin);  // Default-System S4D
-
-      const partners = (await GET(`${SRV}/TrackedPartners?$expand=systems`, asErin)).data.value;
-      // EINE Zeile je Geschaeftspartner (nicht 8 wie im flachen CreatedObjects).
-      expect(partners.length).to.equal(2);
-
-      for (const p of partners) {
-        expect(p.firstName).to.be.a('string').and.not.equal('');
-        expect(p.name).to.equal(`${p.firstName} ${p.lastName}`);   // zusammengesetzter Name
-        expect(p.cityName).to.be.a('string').and.not.equal('');    // Stammdaten fuer Detailseite
-        // 1 Push -> genau ein System-Eintrag (child) mit Nummer
-        expect(p.systems.length).to.equal(1);
-        expect(p.systems[0].system).to.equal('S4D');
-        expect(p.systems[0].objectKey).to.be.a('string').and.not.equal('');
-      }
+  describe('Tracking (zentral)', () => {
+    it('alle Nutzer sehen alle Laeufe, mit Ersteller', async () => {
+      await POST(`${SRV}/generateAndCreate`, { anzahl: 1, label: 'von carol' }, asCarol);
+      const runs = (await GET(`${SRV}/Runs?$filter=label eq 'von carol'`, asDave)).data.value;
+      expect(runs.length).to.equal(1);
+      expect(runs[0].createdBy).to.equal('carol');
     });
 
-    it('derselbe Partner in mehreren Systemen erscheint als EIN Eintrag (1:n)', async () => {
-      await POST(`${SRV}/generateTestCustomers`, { anzahl: 2 }, asFred);
-      // Mehrfach-Push: beide Systeme auf einmal.
-      await POST(`${SRV}/pushToBackend`, { systems: ['s4d', 's4q'] }, asFred);
-
-      const partners = (await GET(`${SRV}/TrackedPartners?$expand=systems`, asFred)).data.value;
-      // Trotz Push in 2 Systeme nur 2 Personen (nicht 4).
-      expect(partners.length).to.equal(2);
-      for (const p of partners) {
-        const systems = p.systems.map(s => s.system).sort();
-        expect(systems).to.eql(['S4D', 'S4Q']);   // jede Person liegt in BEIDEN Systemen
-        expect(p.systems.every(s => s.objectKey && s.objectKey !== '')).to.equal(true);
-      }
+    it('Protokoll-Tabelle System|Objekt|Schluessel ist filterbar', async () => {
+      const rows = (await GET(
+        `${SRV}/CreatedObjects?$filter=system eq 'S4Q' and objectType eq 'BusinessPartner'`, asAlice)).data.value;
+      expect(rows.length).to.be.at.least(1);
+      expect([...new Set(rows.map(r => r.system))]).to.eql(['S4Q']);
     });
   });
 
-  describe('Multi-System', () => {
-    const BACKEND3 = '/odata/v4/backend-api-3';
+  describe('Kopieren eines Laufs', () => {
+    it('kopiert die Partner des Laufs von S4D nach S4Q und haengt sie an denselben Lauf', async () => {
+      await POST(`${SRV}/generateAndCreate`, { anzahl: 3, label: 'Kopie' }, asCarol);
+      const run = await latestRun(asCarol, 'carol');
+      const bp3Before = (await GET(`${BACKEND3}/BusinessPartner`, asCarol)).data.value.length;
 
+      const { data } = await POST(`${SRV}/copyRun`, { run: run.ID, targetSystem: 's4q' }, asCarol);
+      expect(data.value).to.match(/3 Geschäftspartner von S4D nach S4Q/);
+
+      const bp3After = (await GET(`${BACKEND3}/BusinessPartner`, asCarol)).data.value.length;
+      expect(bp3After - bp3Before).to.equal(3);
+
+      const after = await latestRun(asCarol, 'carol');
+      expect(after.systems).to.equal('S4D, S4Q');
+      const copies = after.partners.filter(p => p.system === 'S4Q');
+      expect(copies.length).to.equal(3);
+      for (const c of copies) {
+        expect(c.sourceSystem).to.equal('S4D');          // Herkunft vermerkt
+        expect(c.sourceConcatID).to.be.a('string');      // an derselben Person
+      }
+    });
+
+    it('lehnt Kopieren fremder Laeufe ab (403) und gleiches Ziel (400)', async () => {
+      const run = await latestRun(asCarol, 'carol');
+      await expectStatus(POST(`${SRV}/copyRun`, { run: run.ID, targetSystem: 's4q' }, asDave), 403);
+      await expectStatus(POST(`${SRV}/copyRun`, { run: run.ID, sourceSystem: 's4d', targetSystem: 's4d' }, asCarol), 400);
+    });
+  });
+
+  describe('Loeschen eines Laufs in einem System', () => {
+    it('loescht im Backend, behaelt das Protokoll mit Status deleted', async () => {
+      await POST(`${SRV}/generateAndCreate`, { anzahl: 3, label: 'Loeschen', systems: ['s4d', 's4q'] }, asDave);
+      const run = await latestRun(asDave, 'dave');
+      const bpNumbers = run.partners.filter(p => p.system === 'S4D').map(p => p.objectKey);
+      expect(bpNumbers.length).to.equal(3);
+
+      const { data } = await POST(`${SRV}/deleteRun`, { run: run.ID, system: 's4d' }, asDave);
+      expect(data.value).to.match(/12 Objekte aus S4D/);
+
+      // Im Backend (S4D) sind die Geschaeftspartner weg.
+      const filter = bpNumbers.map(n => `businessPartnerNumber eq ${n}`).join(' or ');
+      const remaining = (await GET(`${BACKEND2}/BusinessPartner?$filter=${encodeURIComponent(filter)}`, asDave)).data.value;
+      expect(remaining.length).to.equal(0);
+
+      // Protokoll bleibt: S4D-Zeilen mit Status deleted, S4Q unveraendert.
+      const after = await latestRun(asDave, 'dave');
+      expect(after.objects.length).to.equal(24);
+      expect(after.objects.filter(o => o.system === 'S4D').every(o => o.status === 'deleted' && o.deletedAt)).to.equal(true);
+      expect(after.objects.filter(o => o.system === 'S4Q').every(o => o.status === 'created')).to.equal(true);
+      expect(after.systems).to.equal('S4Q');
+      expect(after.status).to.equal('partially deleted');
+
+      // Auch aus S4Q loeschen -> Lauf komplett geloescht.
+      await POST(`${SRV}/deleteRun`, { run: run.ID, system: 's4q' }, asDave);
+      const done = await latestRun(asDave, 'dave');
+      expect(done.systems).to.equal('');
+      expect(done.status).to.equal('deleted');
+    });
+
+    it('lehnt erneutes Loeschen (400) und fremde Laeufe (403) ab', async () => {
+      const run = await latestRun(asDave, 'dave');
+      await expectStatus(POST(`${SRV}/deleteRun`, { run: run.ID, system: 's4d' }, asDave), 400);
+      await expectStatus(POST(`${SRV}/deleteRun`, { run: run.ID, system: 's4q' }, asAlice), 403);
+    });
+  });
+
+  describe('Zielsysteme', () => {
     it('stellt die konfigurierten Zielsysteme bereit (Default + zweites)', async () => {
       const systems = (await GET(`${SRV}/Systems`, asAlice)).data.value;
       const byName = Object.fromEntries(systems.map(s => [s.name, s]));
@@ -192,105 +231,25 @@ describe('GISA Master Data Generator', () => {
       expect(byName.S4D.isDefault).to.equal(true);
       expect(byName.S4Q.serviceName).to.equal('BackendAPI_3');
     });
-
-    it('pusht in das gewaehlte zweite System (S4Q) und trackt es getrennt', async () => {
-      const bp3Before = (await GET(`${BACKEND3}/BusinessPartner`, asAlice)).data.value.length;
-
-      await POST(`${SRV}/generateTestCustomers`, { anzahl: 2 }, asAlice);
-      const { data } = await POST(`${SRV}/pushToBackend`, { systems: ['s4q'] }, asAlice);
-      expect(data.value).to.match(/S4Q/);
-
-      // Daten sind im ZWEITEN Backend angekommen (getrennter Speicher).
-      const bp3After = (await GET(`${BACKEND3}/BusinessPartner`, asAlice)).data.value.length;
-      expect(bp3After - bp3Before).to.equal(2);
-
-      // Tracking weist S4Q als System aus.
-      const tracked = (await GET(`${SRV}/CreatedObjects?$filter=system eq 'S4Q'`, asAlice)).data.value;
-      expect(tracked.length).to.be.at.least(8);  // 2 Kunden x 4 Objekte
-      expect([...new Set(tracked.map(t => t.system))]).to.eql(['S4Q']);
-    });
-  });
-
-  describe('Copy zwischen Systemen', () => {
-    const BACKEND3 = '/odata/v4/backend-api-3';
-
-    it('lehnt Copy mit gleichem Quell- und Zielsystem ab (400)', async () => {
-      await expectStatus(POST(`${SRV}/copyData`, { sourceSystem: 's4d', targetSystem: 's4d' }, asCarol), 400);
-    });
-
-    it('kopiert die eigenen Partner von S4D nach S4Q und trackt sie dort', async () => {
-      // carol erzeugt + pusht 3 Partner ins Default-System S4D
-      await POST(`${SRV}/generateTestCustomers`, { anzahl: 3 }, asCarol);
-      await POST(`${SRV}/pushToBackend`, {}, asCarol);
-
-      const bp3Before = (await GET(`${BACKEND3}/BusinessPartner`, asCarol)).data.value.length;
-
-      const { data } = await POST(`${SRV}/copyData`, { sourceSystem: 's4d', targetSystem: 's4q' }, asCarol);
-      expect(data.value).to.match(/3 Business Partner von S4D nach S4Q/);
-
-      // Die 3 Partner sind jetzt zusaetzlich im Ziel-Backend (S4Q / backend-3).
-      const bp3After = (await GET(`${BACKEND3}/BusinessPartner`, asCarol)).data.value.length;
-      expect(bp3After - bp3Before).to.equal(3);
-
-      // Tracking weist die Kopien als S4Q-BusinessPartner von carol aus.
-      const tracked = (await GET(
-        `${SRV}/CreatedObjects?$filter=system eq 'S4Q' and objectType eq 'BusinessPartner'`, asCarol
-      )).data.value;
-      expect(tracked.length).to.equal(3);
-      expect([...new Set(tracked.map(t => t.createdBy))]).to.eql(['carol']);
-    });
-  });
-
-  describe('Löschen im System', () => {
-    const BACKEND2 = '/odata/v4/backend-api-2';
-
-    it('löscht die eigenen Objekte wieder aus dem System und räumt das Tracking', async () => {
-      await POST(`${SRV}/generateTestCustomers`, { anzahl: 3 }, asDave);
-      await POST(`${SRV}/pushToBackend`, {}, asDave);  // Default S4D
-
-      const before = (await GET(`${SRV}/CreatedObjects`, asDave)).data.value;
-      expect(before.length).to.equal(12);  // 3 x 4 Objekte
-      const bpNumbers = before.filter(t => t.objectType === 'BusinessPartner').map(t => t.objectKey);
-      expect(bpNumbers.length).to.equal(3);
-
-      const { data } = await POST(`${SRV}/deleteFromBackend`, { system: 's4d' }, asDave);
-      expect(data.value).to.match(/12 Objekte aus S4D/);
-
-      // Tracking von dave ist leer.
-      const after = (await GET(`${SRV}/CreatedObjects`, asDave)).data.value;
-      expect(after.length).to.equal(0);
-
-      // Die Business Partner sind im Backend (S4D = backend-2) tatsaechlich weg.
-      const filter = bpNumbers.map(n => `businessPartnerNumber eq ${n}`).join(' or ');
-      const remaining = (await GET(`${BACKEND2}/BusinessPartner?$filter=${encodeURIComponent(filter)}`, asDave)).data.value;
-      expect(remaining.length).to.equal(0);
-    });
-
-    it('lehnt Löschen ab, wenn der Nutzer im System nichts angelegt hat (400)', async () => {
-      // dave hat nach dem Loeschen oben nichts mehr im System.
-      await expectStatus(POST(`${SRV}/deleteFromBackend`, { system: 's4d' }, asDave), 400);
-    });
   });
 
   describe('Backend-Validierung (Mock)', () => {
     it('lehnt eine ungueltige Hausnummer ab (400)', async () => {
       const payload = {
-        street_ID: cds.utils.uuid(),
-        city_ID: cds.utils.uuid(),
+        street_ID: cds.utils.uuid(), city_ID: cds.utils.uuid(),
         houseNumber: '123',   // ohne Buchstabe -> ungueltig
         postalCode: '01067'
       };
-      await expectStatus(POST(`${BACKEND}/Address`, payload, asAlice), 400);
+      await expectStatus(POST(`${BACKEND2}/Address`, payload, asAlice), 400);
     });
 
     it('lehnt eine ungueltige PLZ ab (400)', async () => {
       const payload = {
-        street_ID: cds.utils.uuid(),
-        city_ID: cds.utils.uuid(),
+        street_ID: cds.utils.uuid(), city_ID: cds.utils.uuid(),
         houseNumber: '5a',
         postalCode: '1234'    // nur 4 Ziffern -> ungueltig
       };
-      await expectStatus(POST(`${BACKEND}/Address`, payload, asAlice), 400);
+      await expectStatus(POST(`${BACKEND2}/Address`, payload, asAlice), 400);
     });
   });
 });

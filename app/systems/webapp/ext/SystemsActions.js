@@ -3,12 +3,11 @@ sap.ui.define([
   "sap/m/Dialog",
   "sap/m/Button",
   "sap/m/Input",
-  "sap/m/Select",
   "sap/ui/core/Item",
   "sap/m/CheckBox",
   "sap/m/Label",
   "sap/m/VBox"
-], function (MessageToast, Dialog, Button, Input, Select, Item, CheckBox, Label, VBox) {
+], function (MessageToast, Dialog, Button, Input, Item, CheckBox, Label, VBox) {
   "use strict";
 
   // Adresse der Schwester-Apps. Lokal liegen sie unter /<app>/webapp/index.html,
@@ -58,10 +57,17 @@ sap.ui.define([
       const oApi = this;
       const oName = new Input({ placeholder: "z.B. S4P" });
       const oDesc = new Input({ placeholder: "Beschreibung (optional)" });
-      // serviceName muss einem konfigurierten CAP-Remote-Service entsprechen.
-      const oService = new Select({ width: "100%" });
-      oService.addItem(new Item({ key: "BackendAPI_2", text: "BackendAPI_2" }));
-      oService.addItem(new Item({ key: "BackendAPI_3", text: "BackendAPI_3" }));
+      // Technischer Name: der CAP-Remote-Service bzw. die BTP-Destination, ueber
+      // die das System angesprochen wird. Solange kein echtes S/4 angebunden
+      // ist, stehen nur die beiden Mocks zur Verfuegung (als Vorschlag).
+      const oService = new Input({
+        placeholder: "Name der Destination / des Remote-Service",
+        showSuggestion: true,
+        width: "100%"
+      });
+      ["BackendAPI_2", "BackendAPI_3"].forEach(function (sName) {
+        oService.addSuggestionItem(new Item({ text: sName }));
+      });
       const oDefault = new CheckBox({ text: "Als Standard-Ziel verwenden" });
 
       const oDialog = new Dialog({
@@ -70,7 +76,7 @@ sap.ui.define([
           items: [
             new Label({ text: "Name / Code:", labelFor: oName, required: true }), oName,
             new Label({ text: "Beschreibung:", labelFor: oDesc }), oDesc,
-            new Label({ text: "Service:", labelFor: oService }), oService,
+            new Label({ text: "Technischer Name (Destination):", labelFor: oService, required: true }), oService,
             oDefault
           ]
         }).addStyleClass("sapUiContentPadding"),
@@ -80,10 +86,12 @@ sap.ui.define([
           press: function () {
             const sName = (oName.getValue() || "").trim();
             if (!sName) { oName.setValueState("Error"); return; }
+            const sService = (oService.getValue() || "").trim();
+            if (!sService) { oService.setValueState("Error"); return; }
             const oBody = {
               name: sName,
               description: (oDesc.getValue() || "").trim(),
-              serviceName: oService.getSelectedKey(),
+              serviceName: sService,
               isDefault: oDefault.getSelected()
             };
             oDialog.close();

@@ -3,7 +3,7 @@ using { gisa.mdg as my } from '../db/schema.cds';
 @path : '/service/generator'
 @requires : 'Generator'
 service GeneratorService {
-    
+
     entity StreetNames as projection on my.StreetNames;
     entity Cities as projection on my.Cities;
     entity Neighborhoods as projection on my.Neighborhoods;
@@ -12,68 +12,60 @@ service GeneratorService {
     entity PostCodes as projection on my.PostCodes;
     entity HouseNumbers as projection on my.HouseNumbers;
 
-    // Jeder Nutzer sieht/aendert nur seine eigenen generierten Zeilen.
-    @odata.draft.enabled: false
-    @restrict: [
-        { grant: '*', to: 'Generator', where: 'createdBy = $user' }
-    ]
-    entity GeneratorData as projection on my.GeneratorData;
-
-    // Tracking-Protokoll (vollstaendig, je angelegtem Objekt eine Zeile).
-    // Wird intern fuer Copy/Delete genutzt; nur lesen, nur die eigenen Eintraege.
+    // Quittung des letzten Laufs: jeder Nutzer sieht nur seine eigenen Zeilen.
     @readonly
     @restrict: [
         { grant: 'READ', to: 'Generator', where: 'createdBy = $user' }
     ]
-    entity CreatedObjects as projection on my.CreatedObjects;
+    entity GeneratorData as projection on my.GeneratorData {
+        *,
+        // Wo liegt diese Person? (System + dort vergebene Geschaeftspartner-Nummer)
+        placements : Association to many RunPartners
+            on placements.sourceConcatID = concatID and placements.run = run
+    };
 
-    // Geschaeftspartner-Sicht (PARENT): EINE Zeile je Person, unabhaengig vom
-    // System. Gleiche Personen (gleiche Herkunft sourceConcatID) werden zu
-    // einem Eintrag zusammengefasst. 1:n zu den System-Platzierungen.
+    // Laeufe (Testdaten-Erstellungen). Zentral: ALLE Nutzer sehen alle Laeufe,
+    // damit das Team weiss, was in den Systemen liegt. Kopieren/Loeschen
+    // pruefen den Eigentuemer in der Aktion.
     @readonly
-    @restrict: [
-        { grant: 'READ', to: 'Generator', where: 'createdBy = $user' }
-    ]
-    entity TrackedPartners as select from my.CreatedObjects {
-        key sourceConcatID as ID,
-        firstName,
-        lastName,
-        firstName || ' ' || lastName as name : String,
-        streetName,
-        houseNumber,
-        postCode,
-        cityName,
-        createdBy,
-        systems : Association to many PartnerSystems on systems.partner_ID = $self.ID
-    } where objectType = 'BusinessPartner'
-    group by sourceConcatID, firstName, lastName, streetName, houseNumber, postCode, cityName, createdBy;
+    entity Runs as projection on my.Runs {
+        *,
+        // Geschaeftspartner des Laufs (eine Zeile je Person UND System).
+        partners : Association to many RunPartners on partners.run = $self,
+        // Farbe fuer die UI: 3 = gruen (angelegt), 2 = gelb (teilweise), 1 = rot (geloescht)
+        case status when 'created' then 3 when 'deleted' then 1 else 2 end as statusCriticality : Integer
+    };
 
-    // System-Platzierungen (CHILD): je (Person, System) ein Eintrag mit der
-    // dort vom Backend vergebenen Nummer. Wird auf der Detailseite als Tabelle
-    // gezeigt (alle Systeme, in denen der Partner liegt).
+    // Tracking-Protokoll (alle Objekte, Tabelle System|Objekt|Schluessel).
     @readonly
-    @restrict: [
-        { grant: 'READ', to: 'Generator', where: 'createdBy = $user' }
-    ]
-    entity PartnerSystems as projection on my.CreatedObjects {
-        key ID,
-        sourceConcatID as partner_ID,
-        system,
-        objectKey,
-        createdAt,
-        createdBy
+    @cds.redirection.target
+    entity CreatedObjects as projection on my.CreatedObjects {
+        *,
+        // Farbe fuer die UI: 3 = gruen (angelegt), 2 = gelb (teilweise), 1 = rot (geloescht)
+        case status when 'created' then 3 when 'deleted' then 1 else 2 end as statusCriticality : Integer
+    };
+
+    // Nur die Geschaeftspartner aus dem Protokoll (mit Name/Adresse).
+    @readonly
+    entity RunPartners as projection on my.CreatedObjects {
+        *,
+        // Farbe fuer die UI: 3 = gruen (angelegt), 2 = gelb (teilweise), 1 = rot (geloescht)
+        case status when 'created' then 3 when 'deleted' then 1 else 2 end as statusCriticality : Integer
     } where objectType = 'BusinessPartner';
 
     // Katalog der Ziel-Systeme: gemeinsam gepflegt (CRUD fuer Generator-Rolle).
     entity Systems as projection on my.Systems;
 
-    action generateTestCustomers(anzahl : Integer) returns String;
-    // systems: IDs aus Systems (Mehrfachauswahl). Leer -> Default-System.
-    action pushToBackend(systems : many String) returns String;
-    // Kopiert die vom Nutzer im Quellsystem angelegten Business Partner
-    // (inkl. Adresse) in das Zielsystem. sourceSystem/targetSystem = Systems.ID.
-    action copyData(sourceSystem : String, targetSystem : String) returns String;
-    // Loescht die vom Nutzer im angegebenen System angelegten Objekte wieder
-    // aus dem Backend (und die zugehoerigen Tracking-Eintraege). system = Systems.ID.
-    action deleteFromBackend(system : String) returns String;
+    // Ein Schritt: Personen aus den Pools generieren UND in allen gewaehlten
+    // Systemen anlegen. Ergebnis ist ein neuer Lauf. systems leer -> Default.
+    action generateAndCreate(anzahl : Integer, label : String, systems : many String) returns String;
+
+    // Kopiert die Geschaeftspartner eines Laufs (inkl. Adresse) aus einem
+    // System, in dem der Lauf liegt, in ein weiteres System. Nur eigene Laeufe.
+    // sourceSystem leer -> erstes System des Laufs, das nicht das Ziel ist.
+    action copyRun(run : UUID, sourceSystem : String, targetSystem : String) returns String;
+
+    // Loescht die Objekte eines Laufs in EINEM System wieder aus dem Backend.
+    // Die Protokoll-Eintraege bleiben mit Status 'deleted' erhalten. Nur eigene Laeufe.
+    action deleteRun(run : UUID, system : String) returns String;
 }

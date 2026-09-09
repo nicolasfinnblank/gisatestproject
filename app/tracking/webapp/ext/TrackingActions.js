@@ -1,12 +1,14 @@
 sap.ui.define([
   "sap/m/MessageToast",
+  "sap/m/MessageBox",
   "sap/m/Dialog",
   "sap/m/Button",
   "sap/m/Select",
   "sap/ui/core/Item",
   "sap/m/Label",
+  "sap/m/Text",
   "sap/m/VBox"
-], function (MessageToast, Dialog, Button, Select, Item, Label, VBox) {
+], function (MessageToast, MessageBox, Dialog, Button, Select, Item, Label, Text, VBox) {
   "use strict";
 
   // Adresse der Schwester-Apps. Lokal liegen sie unter /<app>/webapp/index.html,
@@ -34,7 +36,6 @@ sap.ui.define([
     }
     window.location.href = appUrl(sApp);
   }
-
 
   // Adresse des CAP-Service RELATIV zur App (wie der Service-Pfad im manifest.json).
   // Auf BTP leitet der jeweilige Approuter <app>/service/generator/* an das
@@ -65,44 +66,60 @@ sap.ui.define([
     }).then(function (r) { return r.json(); }).then(function (j) { return j.value || []; });
   }
 
-  // Tabelle nach einer Aktion neu laden (defensiv ueber die FE-ExtensionAPI).
+  // Seite nach einer Aktion neu laden (defensiv ueber die FE-ExtensionAPI).
   function refresh(oApi) {
     try {
       if (oApi && typeof oApi.refresh === "function") { oApi.refresh(); }
-    } catch (e) { /* notfalls 'Go' druecken */ }
+    } catch (e) { /* notfalls Seite neu laden */ }
   }
 
-  function buildSystemSelect(aSystems) {
+  // Der Lauf, auf dessen Detailseite der Knopf gedrueckt wurde. Fiori Elements
+  // uebergibt Kopfzeilen-Aktionen den Binding-Context der Seite.
+  function currentRun(oContext) {
+    var oRun = oContext && typeof oContext.getObject === "function" ? oContext.getObject() : null;
+    if (!oRun || !oRun.ID) { MessageToast.show("Bitte zuerst einen Lauf öffnen."); return null; }
+    return oRun;
+  }
+
+  // Systeme, in denen der Lauf aktuell liegt ("S4D, S4Q" -> ["S4D","S4Q"]).
+  function runSystems(oRun) {
+    return (oRun.systems || "").split(",").map(function (s) { return s.trim(); }).filter(Boolean);
+  }
+
+  function systemSelect(aSystems) {
     const oSel = new Select({ width: "100%" });
     aSystems.forEach(function (s) {
       oSel.addItem(new Item({
         key: s.ID,
-        text: s.name + (s.description ? " – " + s.description : "") + (s.isDefault ? " (Standard)" : "")
+        text: s.name + (s.description ? " – " + s.description : "")
       }));
     });
     return oSel;
   }
 
   return {
-    // Kopiert die im Quellsystem angelegten Partner ins Zielsystem. Gehoert
-    // hierher, weil die Logik auf den Tracking-Eintraegen (CreatedObjects)
-    // arbeitet, nicht auf frisch generierten Daten.
-    onCopy: function () {
+    // Kopiert die Geschaeftspartner DIESES Laufs aus einem System, in dem er
+    // liegt, in ein weiteres System. Die Kopien haengen am selben Lauf.
+    onCopy: function (oContext) {
       const oApi = this;
+      const oRun = currentRun(oContext);
+      if (!oRun) { return; }
+      const aIn = runSystems(oRun);
+      if (!aIn.length) { MessageToast.show("Der Lauf liegt in keinem System mehr."); return; }
+
       loadSystems().then(function (aSystems) {
-        if (aSystems.length < 2) {
-          MessageToast.show("Mindestens zwei Zielsysteme nötig (siehe 'Systeme verwalten').");
+        const aSources = aSystems.filter(function (s) { return aIn.indexOf(s.name) >= 0; });
+        const aTargets = aSystems.filter(function (s) { return aIn.indexOf(s.name) < 0; });
+        if (!aTargets.length) {
+          MessageToast.show("Der Lauf liegt bereits in allen konfigurierten Systemen.");
           return;
         }
-        const oFrom = buildSystemSelect(aSystems);
-        const oTo = buildSystemSelect(aSystems);
-        const oDefault = aSystems.find(function (s) { return s.isDefault; }) || aSystems[0];
-        const oOther = aSystems.find(function (s) { return s.ID !== oDefault.ID; });
-        oFrom.setSelectedKey(oDefault.ID);
-        oTo.setSelectedKey(oOther.ID);
+        const oFrom = systemSelect(aSources);
+        const oTo = systemSelect(aTargets);
 
         const oDialog = new Dialog({
-          title: "Daten zwischen Systemen kopieren",
+          title: "Lauf \"" + oRun.label + "\" kopieren",
+          contentWidth: "28rem",
           content: new VBox({
             items: [
               new Label({ text: "Von (Quelle):", labelFor: oFrom }), oFrom,
@@ -113,13 +130,17 @@ sap.ui.define([
             text: "Kopieren",
             type: "Emphasized",
             press: function () {
-              const sFrom = oFrom.getSelectedKey();
-              const sTo = oTo.getSelectedKey();
-              if (sFrom === sTo) { MessageToast.show("Quelle und Ziel müssen unterschiedlich sein."); return; }
-              oDialog.close();
-              callAction("copyData", { sourceSystem: sFrom, targetSystem: sTo })
-                .then(function (msg) { MessageToast.show(msg || "Kopiert"); refresh(oApi); })
-                .catch(function (e) { MessageToast.show("Fehler: " + e.message); });
+              oDialog.setBusy(true);
+              callAction("copyRun", {
+                run: oRun.ID, sourceSystem: oFrom.getSelectedKey(), targetSystem: oTo.getSelectedKey()
+              }).then(function (msg) {
+                oDialog.close();
+                MessageToast.show(msg || "Kopiert");
+                refresh(oApi);
+              }).catch(function (e) {
+                oDialog.setBusy(false);
+                MessageBox.error("Kopieren fehlgeschlagen: " + e.message);
+              });
             }
           }),
           endButton: new Button({ text: "Abbrechen", press: function () { oDialog.close(); } }),
@@ -129,25 +150,25 @@ sap.ui.define([
       }).catch(function (e) { MessageToast.show("Fehler: " + e.message); });
     },
 
-    // Loescht die im gewaehlten System angelegten Objekte wieder. Arbeitet
-    // ebenfalls auf den Tracking-Eintraegen.
-    onDelete: function () {
+    // Loescht die Objekte DIESES Laufs in einem System wieder aus dem Backend.
+    // Das Protokoll bleibt erhalten (Status "deleted").
+    onDelete: function (oContext) {
       const oApi = this;
+      const oRun = currentRun(oContext);
+      if (!oRun) { return; }
+      const aIn = runSystems(oRun);
+      if (!aIn.length) { MessageToast.show("Der Lauf ist bereits überall gelöscht."); return; }
+
       loadSystems().then(function (aSystems) {
-        if (!aSystems.length) {
-          MessageToast.show("Keine Zielsysteme konfiguriert.");
-          return;
-        }
-        const oSelect = buildSystemSelect(aSystems);
-        const oDefault = aSystems.find(function (s) { return s.isDefault; });
-        if (oDefault) { oSelect.setSelectedKey(oDefault.ID); }
+        const oSelect = systemSelect(aSystems.filter(function (s) { return aIn.indexOf(s.name) >= 0; }));
 
         const oDialog = new Dialog({
-          title: "Im SAP-System löschen",
+          title: "Lauf \"" + oRun.label + "\" löschen",
           state: "Warning",
+          contentWidth: "28rem",
           content: new VBox({
             items: [
-              new Label({ text: "Löscht die von dir in diesem System angelegten Objekte unwiderruflich." }),
+              new Text({ text: "Löscht alle Objekte dieses Laufs im gewählten System unwiderruflich aus dem SAP-System. Das Protokoll bleibt erhalten (Status \"deleted\")." }).addStyleClass("sapUiSmallMarginBottom"),
               new Label({ text: "System:", labelFor: oSelect }), oSelect
             ]
           }).addStyleClass("sapUiContentPadding"),
@@ -155,11 +176,16 @@ sap.ui.define([
             text: "Löschen",
             type: "Reject",
             press: function () {
-              const sId = oSelect.getSelectedKey();
-              oDialog.close();
-              callAction("deleteFromBackend", { system: sId })
-                .then(function (msg) { MessageToast.show(msg || "Gelöscht"); refresh(oApi); })
-                .catch(function (e) { MessageToast.show("Fehler: " + e.message); });
+              oDialog.setBusy(true);
+              callAction("deleteRun", { run: oRun.ID, system: oSelect.getSelectedKey() })
+                .then(function (msg) {
+                  oDialog.close();
+                  MessageToast.show(msg || "Gelöscht");
+                  refresh(oApi);
+                }).catch(function (e) {
+                  oDialog.setBusy(false);
+                  MessageBox.error("Löschen fehlgeschlagen: " + e.message);
+                });
             }
           }),
           endButton: new Button({ text: "Abbrechen", press: function () { oDialog.close(); } }),
@@ -169,7 +195,7 @@ sap.ui.define([
       }).catch(function (e) { MessageToast.show("Fehler: " + e.message); });
     },
 
-    // Zurueck zur Generator-Liste.
+    // Zurueck zum Generator.
     onBackToGenerator: function () {
       navigateTo("generator");
     }

@@ -34,3 +34,4 @@ app/*/*.zip
 
 # DevTools-Mitschnitte (enthalten Session-Tokens)
 *.har
+.claude/

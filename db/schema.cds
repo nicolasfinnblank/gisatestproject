@@ -54,6 +54,9 @@ annotate HouseNumbers with @assert.unique :
     houseNumber : [ houseNumber ],
 };
 
+// Quittung des LETZTEN Laufs je Nutzer: die zuletzt generierten Personen.
+// Wird beim naechsten Lauf des Nutzers geleert. Die dauerhafte Historie ist
+// Runs/CreatedObjects.
 entity GeneratorData
 {
     key concatID : String;
@@ -64,10 +67,11 @@ entity GeneratorData
     lastName : String(50);
     postCode : String(5);
     houseNumber : String(3);
-    
-    // Eigentuemer der Zeile (Login-ID). Wird beim Generieren gesetzt und sorgt
-    // dafuer, dass jeder Nutzer nur seine eigenen Testdaten sieht/loescht/pusht.
+
+    // Eigentuemer der Zeile (Login-ID). Jeder Nutzer sieht nur seine eigenen.
     createdBy : String(255);
+    // Lauf, in dem diese Person erzeugt wurde.
+    run : Association to Runs;
 }
 
 // Katalog der Ziel-SAP-Systeme, in die gepusht werden kann. Lokal sind beide
@@ -75,8 +79,12 @@ entity GeneratorData
 // zeigen sie auf echte S/4-Destinationen. Gemeinsame Konfiguration (nicht pro
 // Nutzer). Basis fuer Multi-System-Push und spaeter Copy.
 
-entity Systems : cuid
+entity Systems
 {
+    // Textschluessel (z.B. "s4d"), nicht UUID: so lassen sich Systeme in
+    // Seed-Daten, Tests und Aufrufen lesbar ansprechen. Wird beim Anlegen
+    // ueber die UI aus dem Namen abgeleitet (Kleinbuchstaben).
+    key ID      : String(40);
     // Kurzer Anzeigename / Code, z.B. "S4D", "S4Q".
     name        : String(20)
         @mandatory;
@@ -89,31 +97,54 @@ entity Systems : cuid
     isDefault   : Boolean default false;
 }
 
+// Ein Lauf = eine Testdaten-Erstellung ("Testfall 4711"): N Personen, in
+// einem oder mehreren SAP-Systemen angelegt. Der Lauf ist die Einheit, in der
+// Tester denken - Kopieren und Loeschen wirken pro Lauf.
+entity Runs : cuid
+{
+    // Bezeichnung, vom Nutzer vergeben (z.B. "Testfall 4711").
+    label        : String(100);
+    createdBy    : String(255);
+    createdAt    : Timestamp;
+    // Anzahl generierter Personen (Geschaeftspartner je System).
+    partnerCount : Integer;
+    // Systeme, in denen der Lauf aktuell (nicht geloescht) liegt, z.B. "S4D, S4Q".
+    // Wird vom Service nach jeder Aenderung neu berechnet (Anzeige in der Liste).
+    systems      : String(500);
+    // created | partially deleted | deleted - ebenfalls vom Service gepflegt.
+    status       : String(20) default 'created';
+    objects      : Composition of many CreatedObjects on objects.run = $self;
+}
+
 // Protokoll der angelegten Entitaeten: WELCHES Objekt wurde in WELCHEM
-// SAP-System mit WELCHEM Schluessel angelegt. Wird beim Push befuellt und
-// bleibt als Historie erhalten (anders als GeneratorData, das beim erneuten
-// Generieren geleert wird). Basis fuer die spaeteren Schritte Multi-System
-// und Copy.
+// SAP-System mit WELCHEM Schluessel angelegt (Tabelle System|Object|Key aus
+// der Aufgabenstellung). Wird beim Anlegen befuellt und bleibt als Historie
+// erhalten; geloeschte Objekte bekommen einen Status statt zu verschwinden.
 
 entity CreatedObjects : cuid
 {
-    // Ziel-SAP-System (vorerst konstant; wird mit Multi-System parametrisiert).
+    // Lauf, zu dem das Objekt gehoert.
+    run            : Association to Runs;
+    // Ziel-SAP-System (Systems.name).
     system         : String(100);
     // Quell-SAP-System, falls dieser Eintrag durch eine Kopie entstanden ist.
-    // NULL bei normalem Push (also: Quelle = Generator selbst).
+    // NULL bei direkter Anlage (Quelle = Generator selbst).
     sourceSystem   : String(100);
     // Art des angelegten Objekts: Street | City | Address | BusinessPartner.
     objectType     : String(50);
     // Vom Ziel-System vergebener Schluessel (z.B. businessPartnerNumber).
     objectKey      : String(100);
-    // Verweis auf die GeneratorData-Zeile, aus der das Objekt entstand.
+    // Verweis auf die generierte Person (GeneratorData.concatID) - verbindet
+    // dieselbe Person ueber alle Systeme hinweg.
     sourceConcatID : String;
-    // Wer den Push ausgeloest hat (Login-ID) – fuer Multi-User-Filterung.
+    // Wer das Objekt angelegt hat (Login-ID).
     createdBy      : String(255);
-    // Zeitpunkt des Pushs (ISO-Timestamp).
+    // Zeitpunkt der Anlage (ISO-Timestamp).
     createdAt      : Timestamp;
-    // Beschreibende Stammdaten – nur bei objectType = 'BusinessPartner' gefuellt.
-    // Damit die Tracking-Detailseite alle Infos zum Geschaeftspartner zeigen kann.
+    // created | deleted. Geloeschte Objekte bleiben als Historie sichtbar.
+    status         : String(20) default 'created';
+    deletedAt      : Timestamp;
+    // Beschreibende Stammdaten - nur bei objectType = 'BusinessPartner' gefuellt.
     firstName      : String(50);
     lastName       : String(50);
     streetName     : String(100);

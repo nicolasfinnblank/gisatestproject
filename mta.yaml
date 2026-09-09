@@ -21,7 +21,7 @@ modules:
     build-parameters:
       builder: npm-ci
     provides:
-      - name: srv-api # required by consumers of CAP services (e.g. approuter)
+      - name: srv-api # von den Fiori-Apps ueber die Destination srv-api genutzt
         properties:
           srv-url: ${default-url}
     requires:
@@ -154,6 +154,12 @@ resources:
           credential-types:
             - "binding-secret"
             - "x509"
+          # Erlaubte Ruecksprung-Adressen nach dem Login. Ohne diesen Eintrag
+          # bricht XSUAA den Anmeldevorgang mit "OpenID provider cannot process
+          # the request due to configuration issues" ab.
+          redirect-uris:
+            - https://*.cfapps.us10-001.hana.ondemand.com/**
+            - https://*.hana.ondemand.com/**
         role-collections:
           - name: 'Generator (gisa-master-data-generator ${org}-${space})'
             description: 'generated'

@@ -11,7 +11,7 @@
     },
     "dataSources": {
       "mainService": {
-        "uri": "/service/generator/",
+        "uri": "service/generator/",
         "type": "OData",
         "settings": {
           "odataVersion": "4.0"
@@ -20,9 +20,10 @@
     },
     "crossNavigation": {
       "inbounds": {
-        "tracking-display": {
-          "semanticObject": "tracking",
+        "systems-display": {
+          "semanticObject": "systems",
           "action": "display",
+          "title": "{{appTitle}}",
           "signature": {
             "parameters": {},
             "additionalParameters": "allowed"

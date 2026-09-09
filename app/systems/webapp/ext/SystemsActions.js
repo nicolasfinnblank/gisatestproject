@@ -3,13 +3,44 @@ sap.ui.define([
   "sap/m/Dialog",
   "sap/m/Button",
   "sap/m/Input",
-  "sap/m/Select",
   "sap/ui/core/Item",
   "sap/m/CheckBox",
   "sap/m/Label",
   "sap/m/VBox"
-], function (MessageToast, Dialog, Button, Input, Select, Item, CheckBox, Label, VBox) {
+], function (MessageToast, Dialog, Button, Input, Item, CheckBox, Label, VBox) {
   "use strict";
+
+  // Adresse der Schwester-Apps als Rueckfall, wenn keine Launchpad-Shell da ist
+  // (lokal). Am eigenen Pfad erkennen wir, in welcher Umgebung wir laufen.
+  function appUrl(sApp) {
+    // Erstes Pfadsegment auf BTP: "gisamasterdatageneratorservice.gisamdg<app>-1.0.0".
+    // Darin nur den App-Teil tauschen, damit der Rest der Umgebung erhalten bleibt.
+    var seg = window.location.pathname.split("/")[1] || "";
+    if (seg.indexOf("gisamdg") >= 0) {
+      return "/" + seg.replace(/gisamdg(generator|tracking|systems)/, "gisamdg" + sApp) + "/index.html";
+    }
+    return "/" + sApp + "/webapp/index.html";
+  }
+  // Wechsel zu einer Schwester-App. Im Launchpad ueber die Shell (Intent
+  // <app>-display, wie in manifest.json/Work Zone hinterlegt) - dann bleibt
+  // die App eingebettet. Ohne Shell (lokal) per Adresse.
+  function navigateTo(sApp) {
+    if (window.sap && sap.ushell && sap.ushell.Container) {
+      sap.ushell.Container.getServiceAsync("CrossApplicationNavigation").then(function (oNav) {
+        oNav.toExternal({ target: { semanticObject: sApp, action: "display" } });
+      });
+      return;
+    }
+    window.location.href = appUrl(sApp);
+  }
+
+
+  // Adresse des CAP-Service RELATIV zur App (wie der Service-Pfad im manifest.json).
+  // Auf BTP leitet der Work-Zone-Approuter <app>/service/generator/* ueber die
+  // Destination srv-api weiter, lokal uebernimmt srv/server.js die Umschreibung.
+  function serviceUrl(sPath) {
+    return sap.ui.require.toUrl("gisamdg/systems/service/generator/") + (sPath || "");
+  }
 
   // Liste neu laden (defensiv ueber die FE-ExtensionAPI).
   function refresh(oApi) {
@@ -24,10 +55,17 @@ sap.ui.define([
       const oApi = this;
       const oName = new Input({ placeholder: "z.B. S4P" });
       const oDesc = new Input({ placeholder: "Beschreibung (optional)" });
-      // serviceName muss einem konfigurierten CAP-Remote-Service entsprechen.
-      const oService = new Select({ width: "100%" });
-      oService.addItem(new Item({ key: "BackendAPI_2", text: "BackendAPI_2" }));
-      oService.addItem(new Item({ key: "BackendAPI_3", text: "BackendAPI_3" }));
+      // Technischer Service: Name eines in package.json unter cds.requires
+      // konfigurierten Remote-Service (dort haengt die BTP-Destination dran).
+      // Solange kein echtes S/4 angebunden ist, gibt es nur die beiden Mocks.
+      const oService = new Input({
+        placeholder: "z.B. BackendAPI_2 (aus package.json, cds.requires)",
+        showSuggestion: true,
+        width: "100%"
+      });
+      ["BackendAPI_2", "BackendAPI_3"].forEach(function (sName) {
+        oService.addSuggestionItem(new Item({ text: sName }));
+      });
       const oDefault = new CheckBox({ text: "Als Standard-Ziel verwenden" });
 
       const oDialog = new Dialog({
@@ -36,7 +74,7 @@ sap.ui.define([
           items: [
             new Label({ text: "Name / Code:", labelFor: oName, required: true }), oName,
             new Label({ text: "Beschreibung:", labelFor: oDesc }), oDesc,
-            new Label({ text: "Service:", labelFor: oService }), oService,
+            new Label({ text: "Technischer Service:", labelFor: oService, required: true }), oService,
             oDefault
           ]
         }).addStyleClass("sapUiContentPadding"),
@@ -46,14 +84,18 @@ sap.ui.define([
           press: function () {
             const sName = (oName.getValue() || "").trim();
             if (!sName) { oName.setValueState("Error"); return; }
+            const sService = (oService.getValue() || "").trim();
+            if (!sService) { oService.setValueState("Error"); return; }
             const oBody = {
+              // Schluessel aus dem Namen ableiten ("S4P" -> "s4p"), wie in den Seed-Daten.
+              ID: sName.toLowerCase().replace(/[^a-z0-9_-]/g, "-"),
               name: sName,
               description: (oDesc.getValue() || "").trim(),
-              serviceName: oService.getSelectedKey(),
+              serviceName: sService,
               isDefault: oDefault.getSelected()
             };
             oDialog.close();
-            fetch("/service/generator/Systems", {
+            fetch(serviceUrl("Systems"), {
               method: "POST",
               headers: { "Content-Type": "application/json", "Accept": "application/json" },
               body: JSON.stringify(oBody)
@@ -73,7 +115,7 @@ sap.ui.define([
 
     // Zurueck zur Generator-Liste.
     onBackToGenerator: function () {
-      window.location.href = "/generator/webapp/index.html";
+      navigateTo("generator");
     }
   };
 });

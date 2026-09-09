@@ -1,18 +1,51 @@
 sap.ui.define([
   "sap/m/MessageToast",
+  "sap/m/MessageBox",
   "sap/m/Dialog",
   "sap/m/Button",
-  "sap/m/Select",
+  "sap/m/Input",
+  "sap/m/StepInput",
   "sap/m/MultiComboBox",
   "sap/ui/core/Item",
   "sap/m/Label",
   "sap/m/VBox"
-], function (MessageToast, Dialog, Button, Select, MultiComboBox, Item, Label, VBox) {
+], function (MessageToast, MessageBox, Dialog, Button, Input, StepInput, MultiComboBox, Item, Label, VBox) {
   "use strict";
+
+  // Adresse der Schwester-Apps als Rueckfall, wenn keine Launchpad-Shell da ist
+  // (lokal). Am eigenen Pfad erkennen wir, in welcher Umgebung wir laufen.
+  function appUrl(sApp) {
+    // Erstes Pfadsegment auf BTP: "gisamasterdatageneratorservice.gisamdg<app>-1.0.0".
+    // Darin nur den App-Teil tauschen, damit der Rest der Umgebung erhalten bleibt.
+    var seg = window.location.pathname.split("/")[1] || "";
+    if (seg.indexOf("gisamdg") >= 0) {
+      return "/" + seg.replace(/gisamdg(generator|tracking|systems)/, "gisamdg" + sApp) + "/index.html";
+    }
+    return "/" + sApp + "/webapp/index.html";
+  }
+  // Wechsel zu einer Schwester-App. Im Launchpad ueber die Shell (Intent
+  // <app>-display, wie in manifest.json/Work Zone hinterlegt) - dann bleibt
+  // die App eingebettet. Ohne Shell (lokal) per Adresse.
+  function navigateTo(sApp) {
+    if (window.sap && sap.ushell && sap.ushell.Container) {
+      sap.ushell.Container.getServiceAsync("CrossApplicationNavigation").then(function (oNav) {
+        oNav.toExternal({ target: { semanticObject: sApp, action: "display" } });
+      });
+      return;
+    }
+    window.location.href = appUrl(sApp);
+  }
+
+  // Adresse des CAP-Service RELATIV zur App (wie der Service-Pfad im manifest.json).
+  // Auf BTP leitet der Work-Zone-Approuter <app>/service/generator/* ueber die
+  // Destination srv-api weiter, lokal uebernimmt srv/server.js die Umschreibung.
+  function serviceUrl(sPath) {
+    return sap.ui.require.toUrl("gisamdg/generator/service/generator/") + (sPath || "");
+  }
 
   // Ruft eine unbound OData-Action des Generator-Service auf.
   function callAction(sName, oBody) {
-    return fetch("/service/generator/" + sName, {
+    return fetch(serviceUrl(sName), {
       method: "POST",
       headers: { "Content-Type": "application/json", "Accept": "application/json" },
       body: JSON.stringify(oBody || {})
@@ -21,13 +54,14 @@ sap.ui.define([
       if (!r.ok) {
         throw new Error((t.error && t.error.message) || ("HTTP " + r.status));
       }
-      return t.value;
+      // Unbound Actions liefern entweder { value: "..." } oder direkt ein Objekt.
+      return t.value !== undefined ? t.value : t;
     });
   }
 
   // Liste der konfigurierten Zielsysteme laden.
   function loadSystems() {
-    return fetch("/service/generator/Systems?$select=ID,name,description,isDefault&$orderby=name", {
+    return fetch(serviceUrl("Systems?$select=ID,name,description,isDefault&$orderby=name"), {
       headers: { "Accept": "application/json" }
     }).then(function (r) { return r.json(); }).then(function (j) { return j.value || []; });
   }
@@ -39,28 +73,28 @@ sap.ui.define([
     } catch (e) { /* notfalls 'Go' druecken */ }
   }
 
+  // Vorschlag fuer die Bezeichnung: "Testdaten 09.09.2026 14:30".
+  function defaultLabel() {
+    var d = new Date();
+    var pad = function (n) { return (n < 10 ? "0" : "") + n; };
+    return "Testdaten " + pad(d.getDate()) + "." + pad(d.getMonth() + 1) + "." + d.getFullYear()
+      + " " + pad(d.getHours()) + ":" + pad(d.getMinutes());
+  }
+
   return {
+    // EIN Schritt: Anzahl + Bezeichnung + Zielsysteme waehlen, dann generiert
+    // der Service die Personen aus den Pools und legt sie sofort in allen
+    // gewaehlten Systemen an. Ergebnis ist ein Lauf (siehe Tracking).
     onGenerate: function () {
       const oApi = this;
-      const sVal = window.prompt("Wie viele Datensätze generieren?", "10");
-      if (sVal === null) { return; }
-      const iCount = parseInt(sVal, 10) || 10;
-      callAction("generateTestCustomers", { anzahl: iCount })
-        .then(function (msg) {
-          MessageToast.show(msg || "Generiert");
-          refresh(oApi);
-        })
-        .catch(function (e) { MessageToast.show("Fehler: " + e.message); });
-    },
-
-    // Push: ein ODER MEHRERE Zielsysteme waehlen, dann pushToBackend(systems) rufen.
-    onPush: function () {
       loadSystems().then(function (aSystems) {
         if (!aSystems.length) {
-          MessageToast.show("Keine Zielsysteme konfiguriert.");
+          MessageToast.show("Keine Zielsysteme konfiguriert (siehe 'Systeme verwalten').");
           return;
         }
 
+        const oCount = new StepInput({ value: 10, min: 1, max: 500, step: 1, width: "100%" });
+        const oLabel = new Input({ value: defaultLabel(), placeholder: "z.B. Testfall 4711", width: "100%" });
         const oBox = new MultiComboBox({ width: "100%" });
         aSystems.forEach(function (s) {
           oBox.addItem(new Item({
@@ -72,20 +106,48 @@ sap.ui.define([
         if (oDefault) { oBox.setSelectedKeys([oDefault.ID]); }
 
         const oDialog = new Dialog({
-          title: "An SAP-System(e) pushen",
+          title: "Testdaten generieren & anlegen",
+          contentWidth: "28rem",
           content: new VBox({
-            items: [ new Label({ text: "Zielsysteme (Mehrfachauswahl):", labelFor: oBox }), oBox ]
+            items: [
+              new Label({ text: "Anzahl Geschäftspartner:", labelFor: oCount }), oCount,
+              new Label({ text: "Bezeichnung des Laufs:", labelFor: oLabel }), oLabel,
+              new Label({ text: "Zielsysteme (Mehrfachauswahl):", labelFor: oBox }), oBox
+            ]
           }).addStyleClass("sapUiContentPadding"),
           beginButton: new Button({
-            text: "Pushen",
+            text: "Anlegen",
             type: "Emphasized",
             press: function () {
               const aIds = oBox.getSelectedKeys();
               if (!aIds.length) { MessageToast.show("Bitte mindestens ein Zielsystem wählen."); return; }
-              oDialog.close();
-              callAction("pushToBackend", { systems: aIds })
-                .then(function (msg) { MessageToast.show(msg || "Gepusht"); })
-                .catch(function (e) { MessageToast.show("Fehler: " + e.message); });
+              oDialog.setBusy(true);
+              callAction("generateAndCreate", {
+                anzahl: oCount.getValue(),
+                label: (oLabel.getValue() || "").trim(),
+                systems: aIds
+              }).then(function (res) {
+                oDialog.close();
+                refresh(oApi);
+                const oOpts = {
+                  actions: ["Zum Tracking", MessageBox.Action.OK],
+                  emphasizedAction: "Zum Tracking",
+                  onClose: function (sAction) {
+                    if (sAction === "Zum Tracking") { navigateTo("tracking"); }
+                  }
+                };
+                if (res && res.ok === false) {
+                  // Teil-Erfolg: das Zielsystem hat mittendrin abgebrochen.
+                  oOpts.title = "Abgebrochen";
+                  MessageBox.warning(res.message, oOpts);
+                } else {
+                  oOpts.title = "Fertig";
+                  MessageBox.success((res && res.message) || "Angelegt.", oOpts);
+                }
+              }).catch(function (e) {
+                oDialog.setBusy(false);
+                MessageBox.error("Anlegen fehlgeschlagen: " + e.message);
+              });
             }
           }),
           endButton: new Button({ text: "Abbrechen", press: function () { oDialog.close(); } }),
@@ -95,109 +157,14 @@ sap.ui.define([
       }).catch(function (e) { MessageToast.show("Fehler: " + e.message); });
     },
 
-    // Daten von einem System ins andere kopieren (Dialog: Von / Nach).
-    onCopy: function () {
-      loadSystems().then(function (aSystems) {
-        if (aSystems.length < 2) {
-          MessageToast.show("Mindestens zwei Zielsysteme noetig (siehe 'Systeme verwalten').");
-          return;
-        }
-
-        function buildSelect() {
-          const oSel = new Select({ width: "100%" });
-          aSystems.forEach(function (s) {
-            oSel.addItem(new Item({ key: s.ID, text: s.name + (s.description ? " – " + s.description : "") }));
-          });
-          return oSel;
-        }
-        const oFrom = buildSelect();
-        const oTo = buildSelect();
-        const oDefault = aSystems.find(function (s) { return s.isDefault; }) || aSystems[0];
-        const oOther = aSystems.find(function (s) { return s.ID !== oDefault.ID; });
-        oFrom.setSelectedKey(oDefault.ID);
-        oTo.setSelectedKey(oOther.ID);
-
-        const oDialog = new Dialog({
-          title: "Daten zwischen Systemen kopieren",
-          content: new VBox({
-            items: [
-              new Label({ text: "Von (Quelle):", labelFor: oFrom }), oFrom,
-              new Label({ text: "Nach (Ziel):", labelFor: oTo }), oTo
-            ]
-          }).addStyleClass("sapUiContentPadding"),
-          beginButton: new Button({
-            text: "Kopieren",
-            type: "Emphasized",
-            press: function () {
-              const sFrom = oFrom.getSelectedKey();
-              const sTo = oTo.getSelectedKey();
-              if (sFrom === sTo) { MessageToast.show("Quelle und Ziel muessen unterschiedlich sein."); return; }
-              oDialog.close();
-              callAction("copyData", { sourceSystem: sFrom, targetSystem: sTo })
-                .then(function (msg) { MessageToast.show(msg || "Kopiert"); })
-                .catch(function (e) { MessageToast.show("Fehler: " + e.message); });
-            }
-          }),
-          endButton: new Button({ text: "Abbrechen", press: function () { oDialog.close(); } }),
-          afterClose: function () { oDialog.destroy(); }
-        });
-        oDialog.open();
-      }).catch(function (e) { MessageToast.show("Fehler: " + e.message); });
-    },
-
-    // Im gewaehlten System angelegte Objekte wieder loeschen (Dialog).
-    onDelete: function () {
-      loadSystems().then(function (aSystems) {
-        if (!aSystems.length) {
-          MessageToast.show("Keine Zielsysteme konfiguriert.");
-          return;
-        }
-
-        const oSelect = new Select({ width: "100%" });
-        aSystems.forEach(function (s) {
-          oSelect.addItem(new Item({
-            key: s.ID,
-            text: s.name + (s.description ? " – " + s.description : "") + (s.isDefault ? " (Standard)" : "")
-          }));
-        });
-        const oDefault = aSystems.find(function (s) { return s.isDefault; });
-        if (oDefault) { oSelect.setSelectedKey(oDefault.ID); }
-
-        const oDialog = new Dialog({
-          title: "Im SAP-System löschen",
-          state: "Warning",
-          content: new VBox({
-            items: [
-              new Label({ text: "Löscht die von dir in diesem System angelegten Objekte unwiderruflich." }),
-              new Label({ text: "System:", labelFor: oSelect }), oSelect
-            ]
-          }).addStyleClass("sapUiContentPadding"),
-          beginButton: new Button({
-            text: "Löschen",
-            type: "Reject",
-            press: function () {
-              const sId = oSelect.getSelectedKey();
-              oDialog.close();
-              callAction("deleteFromBackend", { system: sId })
-                .then(function (msg) { MessageToast.show(msg || "Gelöscht"); })
-                .catch(function (e) { MessageToast.show("Fehler: " + e.message); });
-            }
-          }),
-          endButton: new Button({ text: "Abbrechen", press: function () { oDialog.close(); } }),
-          afterClose: function () { oDialog.destroy(); }
-        });
-        oDialog.open();
-      }).catch(function (e) { MessageToast.show("Fehler: " + e.message); });
-    },
-
-    // Zur Tracking-Liste (eigenstaendige FE-App unter anderer URL).
+    // Zur Tracking-Liste (Laeufe). Dort liegen Kopieren und Loeschen.
     onShowTracking: function () {
-      window.location.href = "/tracking/webapp/index.html";
+      navigateTo("tracking");
     },
 
-    // Zur Zielsystem-Verwaltung (eigenstaendige FE-App unter anderer URL).
+    // Zur Zielsystem-Verwaltung.
     onShowSystems: function () {
-      window.location.href = "/systems/webapp/index.html";
+      navigateTo("systems");
     }
   };
 });

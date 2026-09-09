@@ -332,7 +332,7 @@ annotate GeneratorService.CreatedObjects with @UI.LineItem #Object: [
 // Feste Reihenfolge: Geschaeftspartner, Adresse, Strasse, Stadt (alphabetisch
 // nach Objekttyp waere City zuerst - unpraktisch).
 annotate GeneratorService.CreatedObjects with @UI.PresentationVariant #Object: {
-  SortOrder: [{ Property: objectType, Descending: false }],
+  SortOrder: [{ Property: objectOrder }],
   Visualizations: ['@UI.LineItem#Object']
 };
 
@@ -346,6 +346,7 @@ annotate GeneratorService.RunPartners with @UI.LineItem #Placement: [
 // Alle Objekte des Laufs: die Tabelle System | Objekt | Schluessel.
 annotate GeneratorService.CreatedObjects with {
   ID             @UI.Hidden;
+  objectOrder    @UI.Hidden;
   run            @UI.Hidden;
   sourceConcatID @UI.Hidden;
   system         @title: 'System';

@@ -41,6 +41,9 @@ service GeneratorService {
     @cds.redirection.target
     entity CreatedObjects as projection on my.CreatedObjects {
         *,
+        // Anzeige-Reihenfolge der Objekttypen: Geschaeftspartner zuerst.
+        case objectType when 'BusinessPartner' then 1 when 'Address' then 2
+                        when 'Street' then 3 else 4 end as objectOrder : Integer,
         // Farbe fuer die UI: 3 = gruen (angelegt), 2 = gelb (teilweise), 1 = rot (geloescht)
         case status when 'created' then 3 when 'deleted' then 1 else 2 end as statusCriticality : Integer
     };

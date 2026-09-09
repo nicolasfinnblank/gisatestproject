@@ -75,9 +75,9 @@ Bezeichnung („Testfall 4711"), Ersteller, Zeitpunkt, Systemen, Status.
 - Erledigte Feature-Branches (bereits in improvements gemergt, können weg):
   `feat/fiori-elements-ui`, `feat/tracking`, `feat/multi-system`, `feat/copy`,
   `feat/delete`.
-- `feat/approuter` (von improvements): BTP-Deployment, Work Zone, Navigation,
-  Cloud-Mocks. `feat/runs` (von feat/approuter, 09.09.): Umbau auf Läufe (s.o.).
-  Reihenfolge zum Abschluss: feat/runs → feat/approuter → improvements mergen.
+- Am 09.09. zusammengeführt und gepusht: `feat/runs` → `feat/approuter` →
+  `improvements` (Merge-Commit f82d4a8, origin/improvements aktuell). Beide
+  Feature-Branches sind gelöscht; gearbeitet wird wieder auf `improvements`.
 - Arbeitsweise: pro Thema eigener Branch → in `improvements` mergen (Fast-Forward)
   wenn fertig → pushen. Erst lokal committen, später pushen (**nur auf Zuruf**).
 
@@ -248,8 +248,7 @@ Standalone-Approuter) — **diese drei Commits sind noch NICHT deployt**, sie
 ausgerollt worden. Vor der Abgabe einmal deployen und das Launchpad prüfen;
 dabei verschwindet die Approuter-App (gewollt).
 
-**Offen:** 32 Commits sind nicht gepusht (origin/improvements steht auf d27d52b).
-Reihenfolge: feat/runs → feat/approuter → improvements → push (nur auf Zuruf).
+**Gepusht (09.09.):** origin/improvements enthält den kompletten Stand.
 
 **Warum Work Zone wochenlang scheiterte:** Work Zone verlangt seit 20.03.2025
 zwingend IAS über OIDC (SAP-Hinweis **KBA 3600432**), SAML genügt nicht. Der

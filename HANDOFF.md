@@ -50,8 +50,8 @@ Bezeichnung („Testfall 4711"), Ersteller, Zeitpunkt, Systemen, Status.
   angelegten Objekte blieben unbekannt), sondern: Protokoll der bisherigen
   Objekte gesichert, Lauf heißt „… (abgebrochen)", `ok=false` -> UI zeigt
   Warnung. Eine zweite DB-Transaktion im Handler ist KEINE Option (SQLite:
-  eine Verbindung -> Deadlock). Obergrenze 500 Personen je Lauf (Approuter-
-  Timeout bei 4 OData-Aufrufen je Person und System).
+  eine Verbindung -> Deadlock). Obergrenze 500 Personen je Lauf (sonst laeuft
+  der Aufruf hinter dem Approuter in den Timeout: 4 OData-Aufrufe je Person und System).
 - Bewusst NICHT umgesetzt: Kopieren/Löschen einzelner Personen (Granularität =
   Lauf, so denken Tester); weitere Objekttypen (die API bietet genau vier).
 
@@ -207,19 +207,20 @@ npx mbt build                                            # -> mta_archives/*.mta
 cf deploy mta_archives/gisa-master-data-generator_1.0.0.mtar -f
 ```
 Module: `srv` (CAP), `db-deployer` (HANA-Schema), `app-deployer` (drei Fiori-Apps
-ins HTML5-Repo), `approuter` (Standalone) + Ressourcen XSUAA (mit
-`redirect-uris`!), HANA hdi-shared, Destination, HTML5-Repo `app-host` +
-`app-runtime`. Vor dem ersten Deploy HANA anlegen:
+ins HTML5-Repo), drei `html5`-Module, `destinations` + Ressourcen XSUAA (mit
+`redirect-uris`!), HANA hdi-shared, Destination, HTML5-Repo `app-host`.
+Ausgeliefert werden die Apps ausschliesslich vom **managed Approuter der Work
+Zone**; der fruehere Standalone-Approuter (Modul `approuter`, Ordner
+`app/router`, Ressource `app-runtime`) wurde am 09.09. entfernt — er war nur
+unser Uebergangsweg und wird bei GISA nicht gebraucht (Git-Historie, falls doch).
+Vor dem ersten Deploy HANA anlegen:
 `cf create-service hana-cloud hana-free gisa-hana -c '{"data":{"memory":16,"systempassword":"…","whitelistIPs":["0.0.0.0/0"]}}'`
 
 **Läuft (verifiziert 07.09.):**
 - HANA `gisa-hana`, Backend (`/service/generator/` -> 401), HDI-Schema deployt.
 - Drei Apps im HTML5-Repo: `gisamdggenerator`, `gisamdgtracking`, `gisamdgsystems`
   — **Name = `sap.app.id` ohne Punkt**, nicht `gisamdg.generator` (das war der
-  503-Fehler des Approuters). Prüfen: `cf html5-list` (Plugin `html5-plugin`).
-- Standalone-Approuter (Login über IAS, Generator-Oberfläche lädt):
-  `https://eb23aca2trial-dev-gisa-master-data-generator-approuter.cfapps.us10-001.hana.ondemand.com`
-  Apps: `/gisamdggenerator/index.html`, `/gisamdgtracking/…`, `/gisamdgsystems/…`
+  503-Fehler des damaligen Approuters). Prüfen: `cf html5-list` (Plugin `html5-plugin`).
 - **Work Zone läuft:** IAS-Tenant `a9jpmbquf`, Trust `sap.custom` aktiv,
   Subscription `SUBSCRIBED`, Site mit drei Kacheln.
   Site Manager (Verwaltung, `dt`): `https://eb23aca2trial.dt.launchpad.cfapps.us10.hana.ondemand.com`
@@ -270,8 +271,8 @@ Laufzeitadresse der jeweiligen App:
 „Auf neuer Registerkarte öffnen" AUS, beide Parameter-Häkchen AUS -> die Apps
 öffnen **eingebettet** im Launchpad (`#generator-display`). Voraussetzung dafür
 war der relative Service-Pfad `service/generator/` im manifest.json (absolut
--> weiße Seite hinter Work Zones Approuter). Die Standalone-Approuter-Adresse
-funktioniert weiterhin als direkter Zugang.
+-> weiße Seite hinter Work Zones Approuter). Das Launchpad ist seit 09.09. der
+einzige Zugang (Standalone-Approuter entfernt).
 
 **Bekannte Einschränkung:** Content Manager -> Content Explorer -> HTML5 Apps
 zeigt **(0)**, Report `total 0, failed 0`, obwohl alle Pflichtangaben erfüllt sind
@@ -299,8 +300,8 @@ ist der Content-Explorer-Weg der Normalfall, der manuelle Weg der Rückfall.
 aufsetzen. BTP-Trial ~90 Tage.
 
 **Trial-Verhalten:** CF-Apps werden bei Inaktivität *gestoppt* (nicht gelöscht):
-HTTP 404 auf der Route heißt `cf start gisa-master-data-generator-srv` (und
-`…-approuter`). HANA schaltet ab: `cf update-service gisa-hana -c '{"data":{"serviceStopped":false}}'`
+HTTP 404 auf der Route heißt `cf start gisa-master-data-generator-srv`.
+HANA schaltet ab: `cf update-service gisa-hana -c '{"data":{"serviceStopped":false}}'`
 (10–15 Min). `cf service gisa-hana` zeigt nur den *letzten Vorgang*, nicht den
 Betriebszustand — die Deployer-Logs sagen „HANA Database instance is stopped".
 

@@ -1,6 +1,4 @@
 node_modules/
-target/
-_out/
 gen/
 
 # Fiori-App-Build-Output (wird beim Deploy erzeugt)
@@ -8,30 +6,20 @@ app/*/dist/
 app/*/out/
 app/*/package-lock.json
 
+# lokale CAP-Artefakte
 .cdsrc-private.json
 default-*.json
 *.sqlite
 *.sqlite-shm
 *.sqlite-wal
 
-# MTA
+# MTA-Build
 mta_archives/
 *_mta_build_tmp
 *.mtar
 
-# Other
-.DS_Store
-
-# @cap-js/cds-typer
-@cds-models
-
-# LCAP
-build/ui-deployer/
-build/dist/
-env/
-# alte App-Zips (Build-Output)
-app/*/*.zip
-
 # DevTools-Mitschnitte (enthalten Session-Tokens)
 *.har
+
+.DS_Store
 .claude/

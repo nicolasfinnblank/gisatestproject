@@ -11,12 +11,10 @@ sap.ui.define([
 ], function (MessageToast, MessageBox, Dialog, Button, Select, Item, Label, Text, VBox) {
   "use strict";
 
-  // Adresse der Schwester-Apps. Lokal liegen sie unter /<app>/webapp/index.html,
-  // auf BTP liefert sie das HTML5-Repository unter /gisamdg<app>/index.html aus.
-  // Am eigenen Pfad erkennen wir, in welcher Umgebung wir laufen.
+  // Adresse der Schwester-Apps als Rueckfall, wenn keine Launchpad-Shell da ist
+  // (lokal). Am eigenen Pfad erkennen wir, in welcher Umgebung wir laufen.
   function appUrl(sApp) {
-    // Erstes Pfadsegment: "gisamdggenerator" (Standalone-Approuter) oder
-    // "gisamasterdatageneratorservice.gisamdggenerator-1.0.0" (Work Zone).
+    // Erstes Pfadsegment auf BTP: "gisamasterdatageneratorservice.gisamdg<app>-1.0.0".
     // Darin nur den App-Teil tauschen, damit der Rest der Umgebung erhalten bleibt.
     var seg = window.location.pathname.split("/")[1] || "";
     if (seg.indexOf("gisamdg") >= 0) {
@@ -26,7 +24,7 @@ sap.ui.define([
   }
   // Wechsel zu einer Schwester-App. Im Launchpad ueber die Shell (Intent
   // <app>-display, wie in manifest.json/Work Zone hinterlegt) - dann bleibt
-  // die App eingebettet. Ohne Shell (Standalone-Approuter, lokal) per Adresse.
+  // die App eingebettet. Ohne Shell (lokal) per Adresse.
   function navigateTo(sApp) {
     if (window.sap && sap.ushell && sap.ushell.Container) {
       sap.ushell.Container.getServiceAsync("CrossApplicationNavigation").then(function (oNav) {
@@ -38,8 +36,8 @@ sap.ui.define([
   }
 
   // Adresse des CAP-Service RELATIV zur App (wie der Service-Pfad im manifest.json).
-  // Auf BTP leitet der jeweilige Approuter <app>/service/generator/* an das
-  // Backend weiter, lokal uebernimmt srv/server.js die Umschreibung.
+  // Auf BTP leitet der Work-Zone-Approuter <app>/service/generator/* ueber die
+  // Destination srv-api weiter, lokal uebernimmt srv/server.js die Umschreibung.
   function serviceUrl(sPath) {
     return sap.ui.require.toUrl("gisamdg/tracking/service/generator/") + (sPath || "");
   }

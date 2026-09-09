@@ -21,7 +21,7 @@ modules:
     build-parameters:
       builder: npm-ci
     provides:
-      - name: srv-api # required by consumers of CAP services (e.g. approuter)
+      - name: srv-api # von den Fiori-Apps ueber die Destination srv-api genutzt
         properties:
           srv-url: ${default-url}
     requires:
@@ -108,36 +108,6 @@ modules:
       supported-platforms:
         []
 
-  # Standalone-Approuter: liefert die drei Fiori-Apps aus dem HTML5-Repository
-  # aus und leitet /service/generator/* an den CAP-Service weiter. Damit sind
-  # die Apps ohne SAP Build Work Zone (und ohne IAS) erreichbar.
-  - name: gisa-master-data-generator-approuter
-    type: approuter.nodejs
-    path: app/router
-    parameters:
-      keep-existing-routes: true
-      disk-quota: 512M
-      memory: 256M
-    properties:
-      # Der Approuter verbietet standardmaessig jede Einbettung
-      # (X-Frame-Options: SAMEORIGIN). Damit die Work-Zone-Kacheln die Apps in
-      # ihrem Rahmen oeffnen koennen, erlauben wir gezielt das Launchpad -
-      # und nur dieses. X-Frame-Options wird geleert, weil Browser die
-      # modernere frame-ancestors-Regel sonst ignorieren. Ein leerer Wert ist
-      # nicht erlaubt (Approuter verlangt mindestens 1 Zeichen), deshalb
-      # "ALLOWALL": Browser kennen den Wert nicht, ignorieren die Kopfzeile
-      # und richten sich nach frame-ancestors.
-      httpHeaders: '[{"X-Frame-Options": "ALLOWALL"}, {"Content-Security-Policy": "frame-ancestors ''self'' https://*.launchpad.cfapps.us10.hana.ondemand.com"}]'
-    requires:
-      - name: srv-api
-        group: destinations
-        properties:
-          name: srv-api
-          url: ~{srv-url}
-          forwardAuthToken: true
-      - name: gisa-master-data-generator-auth
-      - name: gisa-master-data-generator-html5-runtime
-
   - name: gisa-master-data-generator-destinations
     type: com.sap.application.content
     requires:
@@ -185,8 +155,8 @@ resources:
             - "binding-secret"
             - "x509"
           # Erlaubte Ruecksprung-Adressen nach dem Login. Ohne diesen Eintrag
-          # bricht XSUAA den Anmeldevorgang des Approuters mit "OpenID provider
-          # cannot process the request due to configuration issues" ab.
+          # bricht XSUAA den Anmeldevorgang mit "OpenID provider cannot process
+          # the request due to configuration issues" ab.
           redirect-uris:
             - https://*.cfapps.us10-001.hana.ondemand.com/**
             - https://*.hana.ondemand.com/**
@@ -213,11 +183,3 @@ resources:
     parameters:
       service: html5-apps-repo
       service-plan: app-host
-
-  # Laufzeit-Gegenstueck zum app-host: erlaubt dem Approuter, die Apps aus dem
-  # HTML5-Repository auszuliefern (Service "html5-apps-repo-rt" in xs-app.json).
-  - name: gisa-master-data-generator-html5-runtime
-    type: org.cloudfoundry.managed-service
-    parameters:
-      service: html5-apps-repo
-      service-plan: app-runtime

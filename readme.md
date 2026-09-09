@@ -96,15 +96,15 @@ cf deploy mta_archives/gisa-master-data-generator_1.0.0.mtar -f
 ```
 
 Bestandteile: `srv` (CAP-Service, Node.js), `db-deployer` (HANA-Schema),
-`app-deployer` (lädt die drei Fiori-Apps ins HTML5-Repository) sowie die
-Ressourcen XSUAA, HANA (hdi-shared), Destination und HTML5-Repo-Host.
+`app-deployer` (lädt die drei Fiori-Apps ins HTML5-Repository), `destinations`
+sowie die Ressourcen XSUAA, HANA (hdi-shared), Destination und HTML5-Repo-Host.
 
-**Stand:** Backend, Datenbank und die drei Fiori-Apps laufen auf BTP. Die
-Apps sind über SAP Build Work Zone (Launchpad mit drei Kacheln, Anmeldung über
-SAP Cloud Identity Services) und zusätzlich über einen Standalone-Approuter
-erreichbar. Bis eine Destination zum echten S/4HANA-System vorliegt, laufen die
-Zielsysteme auch in der Cloud als Mocks. Details, Adressen und Stolperfallen
-stehen in [`HANDOFF.md`](HANDOFF.md).
+**Stand:** Backend, Datenbank und die drei Fiori-Apps laufen auf BTP. Die Apps
+werden über SAP Build Work Zone ausgeliefert (Launchpad mit drei Kacheln,
+Anmeldung über SAP Cloud Identity Services); einen eigenen Application Router
+enthält das Projekt bewusst nicht. Bis eine Destination zum echten S/4HANA-System
+vorliegt, laufen die Zielsysteme auch in der Cloud als Mocks. Details, Adressen
+und Stolperfallen stehen in [`HANDOFF.md`](HANDOFF.md).
 
 ## Dokumentation
 

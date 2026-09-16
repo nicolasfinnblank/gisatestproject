@@ -10,6 +10,7 @@ cds.env.requires.auth = {
     carol:   { password: 'carol',   roles: ['Generator'] },
     dave:    { password: 'dave',    roles: ['Generator'] },
     erin:    { password: 'erin',    roles: ['Generator'] },
+    frank:   { password: 'frank',   roles: ['Generator'] },
     mallory: { password: 'mallory', roles: [] }
   }
 };
@@ -23,6 +24,7 @@ const asBob     = { auth: { username: 'bob',     password: 'bob'     } };
 const asCarol   = { auth: { username: 'carol',   password: 'carol'   } };
 const asDave    = { auth: { username: 'dave',    password: 'dave'    } };
 const asErin    = { auth: { username: 'erin',    password: 'erin'    } };
+const asFrank   = { auth: { username: 'frank',   password: 'frank'   } };
 const asMallory = { auth: { username: 'mallory', password: 'mallory' } };
 
 const SRV = '/service/generator';
@@ -250,6 +252,43 @@ describe('GISA Master Data Generator', () => {
       const run = await latestRun(asDave, 'dave');
       await expectStatus(POST(`${SRV}/deleteRun`, { run: run.ID, system: 's4d' }, asDave), 400);
       await expectStatus(POST(`${SRV}/deleteRun`, { run: run.ID, system: 's4q' }, asAlice), 403);
+    });
+  });
+
+  describe('Viele Personen: Filter in Bloecken', () => {
+    it('kopiert und loescht 60 Personen vollstaendig, je Abfrage hoechstens 50 Werte', async () => {
+      // Jede Leseabfrage an die Zielsysteme mitschreiben: wie lang ist die Filterliste?
+      const lists = [];
+      let spy = true;
+      const record = (req) => {
+        if (!spy) return;
+        for (const w of req.query?.SELECT?.where || []) {
+          if (w && Array.isArray(w.list)) lists.push(w.list.length);
+        }
+      };
+      for (const name of ['BackendAPI_2', 'BackendAPI_3']) {
+        for (const entity of ['BusinessPartner', 'Address', 'Street', 'City']) {
+          cds.services[name].before('READ', entity, record);
+        }
+      }
+      try {
+        await POST(`${SRV}/generateAndCreate`, { anzahl: 60, label: 'Viele', systems: ['s4d'] }, asFrank);
+        const run = await latestRun(asFrank, 'frank');
+        expect(run.partnerCount).to.equal(60);
+
+        const copy = await POST(`${SRV}/copyRun`, { run: run.ID, targetSystem: 's4q' }, asFrank);
+        expect(copy.data.value).to.match(/60 Geschäftspartner von S4D nach S4Q/);
+
+        const del = await POST(`${SRV}/deleteRun`, { run: run.ID, system: 's4d' }, asFrank);
+        expect(del.data.value).to.match(/240 Objekte aus S4D/);
+
+        // Es wurde tatsaechlich in Bloecken gefragt, und keiner war groesser als 50.
+        expect(lists.length).to.be.greaterThan(0);
+        expect(Math.max(...lists)).to.be.at.most(50);
+        expect(lists.some(n => n === 50)).to.equal(true);
+      } finally {
+        spy = false;
+      }
     });
   });
 

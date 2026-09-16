@@ -50,6 +50,22 @@ module.exports = class GeneratorService extends cds.ApplicationService {
         // Loeschreihenfolge: abhaengige Objekte zuerst (BP -> Address -> Street/City).
         const DELETE_ORDER = ['BusinessPartner', 'Address', 'Street', 'City'];
 
+        // Filterlisten an fremde Systeme in Bloecken abfragen. CAP schreibt
+        // "feld in (a, b, ...)" fuer OData als "feld eq a or feld eq b or ..." in
+        // die Adresse. Bei Hunderten Werten wird sie so lang, dass ein echtes
+        // System sie ablehnt. Eine leere Liste fragt gar nicht erst an: CAP wuerde
+        // den Filter sonst weglassen und ALLE Datensaetze lesen.
+        const FILTER_CHUNK = 50;
+        async function selectIn(backend, entity, field, values, columns) {
+            const rows = [];
+            for (let i = 0; i < values.length; i += FILTER_CHUNK) {
+                const q = SELECT.from(entity).where({ [field]: { in: values.slice(i, i + FILTER_CHUNK) } });
+                if (columns) q.columns(...columns);
+                rows.push(...await backend.run(q));
+            }
+            return rows;
+        }
+
         // ------------------------------------------------------------------
         // Hilfsfunktionen
         // ------------------------------------------------------------------
@@ -265,22 +281,18 @@ module.exports = class GeneratorService extends cds.ApplicationService {
                 const concatByNum = Object.fromEntries(trackedBPs.map(t => [String(t.objectKey), t.sourceConcatID]));
 
                 // Vollstaendige Datensaetze aus dem Quell-Backend lesen: flach in
-                // Schritten (statt tiefem $expand, den der OData-Mock nicht kann).
+                // Schritten (statt tiefem $expand, den der OData-Mock nicht kann)
+                // und je Schritt in Bloecken (selectIn).
                 const source = await cds.connect.to(srcSys.serviceName);
-                const partners = await source.run(
-                    SELECT.from('BusinessPartner').where({ businessPartnerNumber: { in: keys } })
-                );
+                const partners = await selectIn(source, 'BusinessPartner', 'businessPartnerNumber', keys);
                 const byId = (rows) => Object.fromEntries(rows.map(r => [r.ID, r]));
                 const addrIds = [...new Set(partners.map(p => p.address_ID).filter(Boolean))];
-                const addresses = addrIds.length
-                    ? await source.run(SELECT.from('Address').where({ ID: { in: addrIds } })) : [];
+                const addresses = await selectIn(source, 'Address', 'ID', addrIds);
                 const addrById = byId(addresses);
                 const streetIds = [...new Set(addresses.map(a => a.street_ID).filter(Boolean))];
                 const cityIds   = [...new Set(addresses.map(a => a.city_ID).filter(Boolean))];
-                const streetById = byId(streetIds.length
-                    ? await source.run(SELECT.from('Street').where({ ID: { in: streetIds } })) : []);
-                const cityById = byId(cityIds.length
-                    ? await source.run(SELECT.from('City').where({ ID: { in: cityIds } })) : []);
+                const streetById = byId(await selectIn(source, 'Street', 'ID', streetIds));
+                const cityById   = byId(await selectIn(source, 'City', 'ID', cityIds));
 
                 // Im Ziel-Backend neu anlegen (gleiche Reihenfolge wie beim Anlegen).
                 const target = await cds.connect.to(tgtSys.serviceName);
@@ -340,9 +352,7 @@ module.exports = class GeneratorService extends cds.ApplicationService {
                         .filter(n => !Number.isNaN(n));
                     if (!keys.length) continue;
 
-                    const rows = await backend.run(
-                        SELECT.from(type).columns('ID').where({ [numField]: { in: keys } })
-                    );
+                    const rows = await selectIn(backend, type, numField, keys, ['ID']);
                     for (const r of rows) {
                         await backend.delete(type, r.ID);
                         deleted++;

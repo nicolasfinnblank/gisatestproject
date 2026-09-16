@@ -52,6 +52,14 @@ Bezeichnung („Testfall 4711"), Ersteller, Zeitpunkt, Systemen, Status.
   Warnung. Eine zweite DB-Transaktion im Handler ist KEINE Option (SQLite:
   eine Verbindung -> Deadlock). Obergrenze 500 Personen je Lauf (sonst laeuft
   der Aufruf hinter dem Approuter in den Timeout: 4 OData-Aufrufe je Person und System).
+- **Anschluss echter Systeme vorbereitet (16.09.2026):** `selectIn` in `service.js`
+  fragt Filterlisten an Remote-Services in Blöcken zu 50 ab (CAP macht aus `in` eine
+  `eq … or eq …`-Kette in der URL, siehe `@sap/cds/libx/odata/parse/cqn2odata.js`),
+  leere Listen fragen gar nicht an (CAP würde den Filter sonst weglassen). Test
+  „Viele Personen" mit Spion auf den READ-Handlern der Mocks. `"csrf": true` für
+  BackendAPI_2/3 in `package.json`. Offene Grenzen (Cloud Connector, Laufzeit großer
+  Läufe, kein HTTP-Test, Schnittstellen-Voraussetzung, Modellkopie je System) stehen
+  im readme unter „Bekannte Grenzen und nächste Schritte".
 - Bewusst NICHT umgesetzt: Kopieren/Löschen einzelner Personen (Granularität =
   Lauf, so denken Tester); weitere Objekttypen (die API bietet genau vier).
 
@@ -62,7 +70,7 @@ Bezeichnung („Testfall 4711"), Ersteller, Zeitpunkt, Systemen, Status.
 - Starten: `cds watch` → http://localhost:4004
 - FE-Apps: `/generator/webapp/index.html`, `/tracking/webapp/index.html`,
   `/systems/webapp/index.html`
-- Tests: `npm test` (22 Integrationstests, jest + cds.test)
+- Tests: `npm test` (23 Integrationstests, jest + cds.test)
 - Browser-Test lokal: `node_modules/.bin/cds serve all --with-mocks --in-memory
   --port 4004` per Shell starten (s. Gotcha 7).
 
@@ -82,7 +90,7 @@ Bezeichnung („Testfall 4711"), Ersteller, Zeitpunkt, Systemen, Status.
   wenn fertig → pushen. Erst lokal committen, später pushen (**nur auf Zuruf**).
 
 ## Was funktioniert (verifiziert 09.09.2026, lokal)
-- Backend: **22/22 Tests grün** (Auth, Generieren+Anlegen in 1 und 2 Systemen,
+- Backend: **23/23 Tests grün** (Auth, Generieren+Anlegen in 1 und 2 Systemen,
   Quittung, zentrales Tracking, Kopieren je Lauf, Löschen mit Status, 403 bei
   fremden Läufen, Validierung, Teilabbruch mit gesichertem Protokoll, System-
   Detail/Anlage, unbekannter Service ohne Lauf-Leiche).

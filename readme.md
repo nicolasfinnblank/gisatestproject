@@ -41,7 +41,7 @@ zwischen Systemen kopieren und im System wieder löschen.
 | `app/generator/webapp/` | UI 1: Lauf anlegen (Dialog) + Quittung des letzten Laufs |
 | `app/tracking/webapp/` | UI 2: Läufe mit Geschäftspartnern und Objekten; Kopieren/Löschen |
 | `app/systems/webapp/` | UI 3: Zielsysteme verwalten |
-| `test/integration.test.js` | Integrationstests (22) |
+| `test/integration.test.js` | Integrationstests (23) |
 | `mta.yaml` | Deployment-Beschreibung für SAP BTP (Backend, DB, Fiori-Apps) |
 
 ## Lokal starten (auch für Kollegen)
@@ -76,7 +76,7 @@ im Launchpad läuft sie über die Kacheln bzw. die Shell.
 ## Tests
 
 ```bash
-npm test           # 22 Integrationstests (jest + cds.test)
+npm test           # 23 Integrationstests (jest + cds.test)
 ```
 
 Geprüft werden u. a. Authentifizierung/Rollen, Generieren & anlegen in einem
@@ -133,7 +133,8 @@ Berechtigungen:
    }
    ```
 
-   Weitere Systeme bekommen weitere Einträge (z. B. `BackendAPI_4`).
+   Weitere Systeme bekommen weitere Einträge (z. B. `BackendAPI_4`). Aufwand und
+   Voraussetzungen siehe „Bekannte Grenzen und nächste Schritte".
 3. **Mocks entfernen**, sobald die echten Systeme hängen:
    `cds.features["[production]"].with_mocks` löschen, im `start`-Skript
    `--with-mocks` streichen, `db/mocks.cds` löschen. Wichtig: die acht dann
@@ -149,6 +150,44 @@ Berechtigungen:
 6. **Launchpad**: Site in SAP Build Work Zone anlegen und die drei Apps als
    Kacheln aufnehmen — in einer regulären Umgebung über den Content Explorer
    des HTML5-Repositories, sonst manuell im Content Manager.
+
+## Bekannte Grenzen und nächste Schritte
+
+Die Anwendung ist gegen nachgebildete Zielsysteme entwickelt und getestet. Für den
+Anschluss eines echten S/4HANA-Systems ist Folgendes bekannt.
+
+**Bereits vorbereitet**
+
+- **CSRF-Token:** Für beide Remote-Services ist `"csrf": true` gesetzt. SAP-Gateway-
+  Dienste verlangen das Token bei Schreibzugriffen, CAP holt es damit automatisch.
+- **Filter in Blöcken:** Kopieren und Löschen fragen Nummern und Kennungen in Blöcken
+  zu höchstens 50 Werten ab (`selectIn` in `srv/service.js`). CAP schreibt eine
+  Filterliste für OData als `feld eq a or feld eq b …` in die Adresse, ohne Blöcke
+  würde sie bei großen Läufen zu lang. Abgesichert durch einen eigenen Test.
+
+**Offen, weil nur mit einem echten System prüfbar**
+
+- **Zugang ins Firmennetz:** Für ein S/4 im eigenen Netz braucht es den SAP Cloud
+  Connector und eine Instanz des Connectivity-Dienstes, gebunden an `srv`. Die
+  Destination bekommt `ProxyType: OnPremise`. Beides fehlt in `mta.yaml`.
+- **Laufzeit großer Läufe:** Alle Aufrufe an das Zielsystem laufen nacheinander in
+  einer einzigen Anfrage, vier je Person und System. Die Obergrenze von 500 Personen
+  ist gegen die Nachbildung bemessen. Gegen ein echtes System die Laufzeit messen und
+  bei Bedarf auf Hintergrundverarbeitung mit Statusanzeige oder OData-`$batch`
+  umstellen.
+- **Kein Test über das Netz:** Die Nachbildungen laufen im selben Prozess wie der
+  Dienst, dabei entstehen keine HTTP-Aufrufe. Adressbau, Anmeldung und Laufzeiten
+  werden erst beim ersten Anschluss geprüft.
+- **Schnittstelle:** Das Zielsystem muss die von GISA beschriebene Schnittstelle
+  anbieten (`srv/external/BackendAPI_2.edmx`). Die Standard-API von S/4HANA für
+  Geschäftspartner ist anders aufgebaut.
+- **Aufwand je weiterem System:** Im jetzigen Aufbau eine eigene, umbenannte Kopie
+  des Modells in `srv/external/` (Dienstname gleich Schlüssel in `cds.requires`),
+  ein Eintrag in `package.json`, eine Destination, neu ausrollen, danach der Eintrag
+  in der Systeme-App.
+
+**Empfehlung für den ersten Anschluss:** ein Testsystem, ein Lauf mit einer Person,
+danach schrittweise größer und dabei die Laufzeit messen.
 
 ## Dokumentation
 

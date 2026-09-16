@@ -45,11 +45,13 @@
       },
       "BackendAPI_2": {
         "kind": "odata",
-        "model": "srv/external/BackendAPI_2"
+        "model": "srv/external/BackendAPI_2",
+        "csrf": true
       },
       "BackendAPI_3": {
         "kind": "odata",
-        "model": "srv/external/BackendAPI_3"
+        "model": "srv/external/BackendAPI_3",
+        "csrf": true
       },
       "[production]": {
         "auth": {

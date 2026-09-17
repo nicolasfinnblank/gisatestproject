@@ -154,17 +154,17 @@ Bezeichnung, Ersteller, Zeitpunkt, Systemen und Status.
    ausgeblendeter Filterleiste nichts. `GeneratorActions.refresh` nutzt deshalb
    `oApi.byId("fe::table::MyRuns::LineItem::Table").refresh()` (die stabile
    Table-API; die ID ohne `::Table` ist intern und wirft einen Fehler).
-   **Controller-Erweiterung im Generator:** `Component.js` muss
+8. **Controller-Erweiterung im Generator:** `Component.js` muss
    `ext/MyRunsNavigation` vorab laden, sonst „Attempt to load Extension Controller
    … not successful" und die Startseite bleibt leer. Die Route `MyRunsObjectPage`
    bleibt nur, damit FE Zeilen klickbar macht.
-8. **Zweite DB-Transaktion im Handler** ist keine Option (SQLite: eine Verbindung
+9. **Zweite DB-Transaktion im Handler** ist keine Option (SQLite: eine Verbindung
    → hängt). Deshalb `ok: false` statt Fehler beim Teilabbruch.
-9. **Console-„Fehler" lokal** (Component-preload 404, lrep/flex 404, i18n_en 404)
+10. **Console-„Fehler" lokal** (Component-preload 404, lrep/flex 404, i18n_en 404)
    sind harmlos.
-10. **UI selbst prüfen:** Server per Shell starten, eingebauter Browser mit URL;
+11. **UI selbst prüfen:** Server per Shell starten, eingebauter Browser mit URL;
     nach Änderungen `location.reload()` erzwingen (Hash-Wechsel lädt nicht neu).
-11. **Content Explorer zeigt keine Apps (0):** Trial-Eigenheit (Work Zone auf
+12. **Content Explorer zeigt keine Apps (0):** Trial-Eigenheit (Work Zone auf
     Landschaft cf-us10, unsere Org auf cf-us10-001). Abgehakt, deshalb manuelle
     Kacheln. Bei GISA ist der Content Explorer der Normalfall.
 

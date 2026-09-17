@@ -31,11 +31,13 @@ Bezeichnung, Ersteller, Zeitpunkt, Systemen und Status.
   - Liste aller Läufe aller Nutzer (zentral), neueste zuerst.
   - Detailseite: Laufdaten + Tabelle Geschäftspartner (eine Zeile je Person UND
     System). Klick auf eine Person → ihre vier Objekte mit Nummern.
-  - Kopfknöpfe „In weiteres System kopieren" (`copyRun`, Kopien hängen am selben
-    Lauf mit `sourceSystem`) und „In System löschen" (Mehrfachauswahl der
+  - Kopfknöpfe „In weiteres System kopieren" (eine Quelle, Ziele als
+    Mehrfachauswahl, nur bei einem möglichen Ziel vorbelegt; `copyRun` je Ziel.
+    Kopien hängen am selben Lauf mit `sourceSystem`) und „In System löschen" (Mehrfachauswahl der
     Systeme, in denen der Lauf liegt; nur bei genau einem System vorbelegt. Die UI
-    ruft `deleteRun` nacheinander je System auf und stoppt beim ersten Fehler mit
-    Angabe, was schon gelöscht ist. Protokoll bleibt mit `status = 'deleted'` +
+    ruft `deleteRun` nacheinander je System auf. Kopieren und Löschen teilen sich
+    `runEach` in `TrackingActions.js`: stoppt beim ersten Fehler und meldet, was
+    schon erledigt ist. Protokoll bleibt mit `status = 'deleted'` +
     `deletedAt`). Beides nur
     für eigene Läufe (sonst 403).
   - Reiter „Alle angelegten Objekte" (Folie 16) ist **ausgeblendet**, Entscheidung

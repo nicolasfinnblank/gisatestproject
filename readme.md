@@ -19,7 +19,7 @@ zwischen Systemen kopieren und im System wieder löschen.
   Geschäftspartnern je System (Name, Adresse, Nummer, Status); je Person eine
   Seite mit den vier im System angelegten Objekten und ihren Schlüsseln.
 - **Kopieren** – überträgt die Geschäftspartner eines Laufs aus einem System in
-  ein weiteres (`copyRun`); die Kopien hängen am selben Lauf.
+  ein oder mehrere weitere (`copyRun` je Ziel); die Kopien hängen am selben Lauf.
 - **Löschen** – entfernt die Objekte eines Laufs in einem oder mehreren Systemen
   wieder (`deleteRun` je System); das Protokoll bleibt mit Status „Gelöscht" erhalten.
 - **Mehrbenutzer-sicher** – Kopieren und Löschen nur für eigene Läufe; die

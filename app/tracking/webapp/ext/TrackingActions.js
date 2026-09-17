@@ -96,9 +96,35 @@ sap.ui.define([
     return oSel;
   }
 
+  // Fuehrt eine Aktion nacheinander je gewaehltem System aus (Kopieren/Loeschen).
+  // Scheitert ein System, wird gestoppt und genau gesagt, was schon erledigt ist.
+  function runEach(aIds, fnCall, aSystems, sWhat, oDialog, oApi, sDefault) {
+    const aDone = [];
+    const nameOf = function (sId) {
+      const o = aSystems.find(function (s) { return s.ID === sId; });
+      return o ? o.name : sId;
+    };
+    aIds.reduce(function (p, sId) {
+      return p.then(function () {
+        return fnCall(sId)
+          .then(function (msg) { aDone.push(msg); })
+          .catch(function (e) { e.system = sId; throw e; });
+      });
+    }, Promise.resolve()).then(function () {
+      oDialog.close();
+      MessageToast.show(aDone.join("\n") || sDefault);
+      refresh(oApi);
+    }).catch(function (e) {
+      oDialog.close();
+      refresh(oApi);
+      MessageBox.error(sWhat + " in " + nameOf(e.system) + " fehlgeschlagen: " + e.message
+        + (aDone.length ? "\n\nBereits erledigt:\n" + aDone.join("\n") : ""));
+    });
+  }
+
   return {
     // Kopiert die Geschaeftspartner DIESES Laufs aus einem System, in dem er
-    // liegt, in ein weiteres System. Die Kopien haengen am selben Lauf.
+    // liegt, in ein oder mehrere weitere Systeme. Die Kopien haengen am selben Lauf.
     onCopy: function (oContext) {
       const oApi = this;
       const oRun = currentRun(oContext);
@@ -114,7 +140,13 @@ sap.ui.define([
           return;
         }
         const oFrom = systemSelect(aSources);
-        const oTo = systemSelect(aTargets);
+        // Ziele wie beim Anlegen/Loeschen als Mehrfachauswahl; nur ein moegliches
+        // Ziel ist gleich vorbelegt.
+        const oTo = new MultiComboBox({ width: "100%" });
+        aTargets.forEach(function (s) {
+          oTo.addItem(new Item({ key: s.ID, text: s.name + (s.description ? " – " + s.description : "") }));
+        });
+        if (aTargets.length === 1) { oTo.setSelectedKeys([aTargets[0].ID]); }
 
         const oDialog = new Dialog({
           title: "Lauf \"" + oRun.label + "\" kopieren",
@@ -122,24 +154,21 @@ sap.ui.define([
           content: new VBox({
             items: [
               new Label({ text: "Von (Quelle):", labelFor: oFrom }), oFrom,
-              new Label({ text: "Nach (Ziel):", labelFor: oTo }), oTo
+              new Label({ text: "Nach (Ziele, Mehrfachauswahl):", labelFor: oTo }), oTo
             ]
           }).addStyleClass("sapUiContentPadding"),
           beginButton: new Button({
             text: "Kopieren",
             type: "Emphasized",
             press: function () {
+              const aIds = oTo.getSelectedKeys();
+              if (!aIds.length) { MessageToast.show("Bitte mindestens ein Zielsystem wählen."); return; }
               oDialog.setBusy(true);
-              callAction("copyRun", {
-                run: oRun.ID, sourceSystem: oFrom.getSelectedKey(), targetSystem: oTo.getSelectedKey()
-              }).then(function (msg) {
-                oDialog.close();
-                MessageToast.show(msg || "Kopiert");
-                refresh(oApi);
-              }).catch(function (e) {
-                oDialog.setBusy(false);
-                MessageBox.error("Kopieren fehlgeschlagen: " + e.message);
-              });
+              runEach(aIds, function (sId) {
+                return callAction("copyRun", {
+                  run: oRun.ID, sourceSystem: oFrom.getSelectedKey(), targetSystem: sId
+                });
+              }, aTargets, "Kopieren", oDialog, oApi, "Kopiert");
             }
           }),
           endButton: new Button({ text: "Abbrechen", press: function () { oDialog.close(); } }),
@@ -185,26 +214,9 @@ sap.ui.define([
               const aIds = oBox.getSelectedKeys();
               if (!aIds.length) { MessageToast.show("Bitte mindestens ein System wählen."); return; }
               oDialog.setBusy(true);
-              // Nacheinander je System die bestehende Aktion deleteRun aufrufen.
-              // Scheitert ein System, stoppen und genau sagen, was schon geloescht ist.
-              const aDone = [];
-              aIds.reduce(function (p, sId) {
-                return p.then(function () {
-                  return callAction("deleteRun", { run: oRun.ID, system: sId })
-                    .then(function (msg) { aDone.push(msg); })
-                    .catch(function (e) { e.system = sId; throw e; });
-                });
-              }, Promise.resolve()).then(function () {
-                oDialog.close();
-                MessageToast.show(aDone.join("\n") || "Gelöscht");
-                refresh(oApi);
-              }).catch(function (e) {
-                oDialog.close();
-                refresh(oApi);
-                const oSys = aSources.find(function (s) { return s.ID === e.system; });
-                MessageBox.error("Löschen in " + (oSys ? oSys.name : e.system) + " fehlgeschlagen: " + e.message
-                  + (aDone.length ? "\n\nBereits erledigt:\n" + aDone.join("\n") : ""));
-              });
+              runEach(aIds, function (sId) {
+                return callAction("deleteRun", { run: oRun.ID, system: sId });
+              }, aSources, "Löschen", oDialog, oApi, "Gelöscht");
             }
           }),
           endButton: new Button({ text: "Abbrechen", press: function () { oDialog.close(); } }),

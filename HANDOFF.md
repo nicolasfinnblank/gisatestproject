@@ -46,6 +46,8 @@ Bezeichnung, Ersteller, Zeitpunkt, Systemen und Status.
   KEINEN Fehler (der würde Lauf und Protokoll zurückrollen, die schon im S/4
   angelegten Objekte blieben unbekannt). Stattdessen: Protokoll sichern, Lauf
   heißt „… (abgebrochen)", Antwort `ok: false`, UI zeigt Warnung.
+- Stadtteile (`Neighborhoods`) am 17.09. entfernt: die Ziel-API hat kein Feld
+  dafür. Die alte HANA-Tabelle bleibt verwaist liegen (harmlos).
 - Bewusst nicht umgesetzt: Kopieren/Löschen einzelner Personen (Granularität =
   Lauf); weitere Objekttypen (die API kennt genau vier).
 
@@ -53,11 +55,13 @@ Bezeichnung, Ersteller, Zeitpunkt, Systemen und Status.
 - `db/schema.cds` (Namespace `gisa.mdg`): Pools, `Runs` (Composition `objects`),
   `CreatedObjects` (Protokoll: run, system, sourceSystem, objectType, objectKey,
   sourceConcatID, status, deletedAt + Stammdaten beim BP), `Systems`.
-- `db/data/*.csv`: Pools + Startsysteme **S4D** (Standard, `BackendAPI_2`) und
+- `db/data/*.csv`: sechs Pools (je eines pro Feld der Ziel-API: Vorname, Nachname,
+  Straße, Hausnummer, PLZ, Stadt) + Startsysteme **S4D** (Standard, `BackendAPI_2`) und
   **S4Q** (`BackendAPI_3`).
 - `db/mocks.cds`: macht die Mock-Tabellen der Backends auch auf HANA persistent.
 - `srv/service.cds`: `GeneratorService`, Pfad `/service/generator`,
-  `@requires: 'Generator'`. Sichten `Runs` (alle), `MyRuns` (5 neueste eigene,
+  `@requires: 'Generator'`. Die Pools sind bewusst NICHT in der Schnittstelle
+  (`service.js` liest sie über `cds.entities('gisa.mdg')`). Sichten `Runs` (alle), `MyRuns` (5 neueste eigene,
   `where createdBy = $user order by createdAt desc limit 5`), `CreatedObjects`,
   `RunPartners` (nur BusinessPartner, mit `objects`), `Systems` (CRUD).
   Berechnet: `statusText`, `statusCriticality`, `objectOrder`.

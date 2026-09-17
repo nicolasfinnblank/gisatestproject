@@ -4,13 +4,8 @@ using { gisa.mdg as my } from '../db/schema.cds';
 @requires : 'Generator'
 service GeneratorService {
 
-    entity StreetNames as projection on my.StreetNames;
-    entity Cities as projection on my.Cities;
-    entity Neighborhoods as projection on my.Neighborhoods;
-    entity FirstNames as projection on my.FirstNames;
-    entity LastNames as projection on my.LastNames;
-    entity PostCodes as projection on my.PostCodes;
-    entity HouseNumbers as projection on my.HouseNumbers;
+    // Die Namenslisten (Datenpools) sind bewusst NICHT Teil der Schnittstelle:
+    // keine App zeigt sie an, nur service.js liest sie intern beim Anlegen.
 
     // Laeufe (Testdaten-Erstellungen). Zentral: ALLE Nutzer sehen alle Laeufe,
     // damit das Team weiss, was in den Systemen liegt. Kopieren/Loeschen

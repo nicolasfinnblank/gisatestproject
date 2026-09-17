@@ -14,12 +14,6 @@ entity Cities : cuid
         @mandatory;
 }
 
-entity Neighborhoods : cuid
-{
-    neighborhoodName : String(100)
-        @mandatory;
-}
-
 entity FirstNames : cuid
 {
     firstName : String(50)

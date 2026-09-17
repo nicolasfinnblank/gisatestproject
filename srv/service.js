@@ -19,11 +19,11 @@ const RANDOM = () => cds.db.kind === 'hana' ? 'RAND()' : 'RANDOM()';
 
 module.exports = class GeneratorService extends cds.ApplicationService {
     async init() {
+        const { CreatedObjects, Runs, Systems } = this.entities;
+        // Namenslisten direkt aus dem Datenmodell (nicht ueber die Schnittstelle angeboten).
         const {
-            StreetNames, Cities, Neighborhoods,
-            FirstNames, LastNames, PostCodes,
-            HouseNumbers, CreatedObjects, Runs, Systems
-        } = this.entities;
+            StreetNames, Cities, FirstNames, LastNames, PostCodes, HouseNumbers
+        } = cds.entities('gisa.mdg');
 
         // Welches *Number-Feld traegt den Backend-Schluessel je Objekttyp.
         const NUMBER_FIELD = {
@@ -153,12 +153,11 @@ module.exports = class GeneratorService extends cds.ApplicationService {
                 //    wie Personen gebraucht werden - nicht die ganze Liste (allein
                 //    die Strassen sind ~20.600 Zeilen). Die Datenbank mischt.
                 const sample = (entity) => SELECT.from(entity).orderBy(RANDOM()).limit(anzahl);
-                const [streets, cts, hoods, fNames, lNames, pCodes, hNumbers] = await Promise.all([
-                    sample(StreetNames), sample(Cities), sample(Neighborhoods),
-                    sample(FirstNames), sample(LastNames), sample(PostCodes),
-                    sample(HouseNumbers)
+                const [streets, cts, fNames, lNames, pCodes, hNumbers] = await Promise.all([
+                    sample(StreetNames), sample(Cities), sample(FirstNames),
+                    sample(LastNames), sample(PostCodes), sample(HouseNumbers)
                 ]);
-                if ([streets, cts, hoods, fNames, lNames, pCodes, hNumbers].some(r => !r.length)) {
+                if ([streets, cts, fNames, lNames, pCodes, hNumbers].some(r => !r.length)) {
                     return req.error(500, 'Stammdaten sind leer. Bitte die CSV-Dateien prüfen.');
                 }
 
@@ -175,10 +174,10 @@ module.exports = class GeneratorService extends cds.ApplicationService {
                 const at = (rows, i) => rows[i] ?? pick(rows);
                 const persons = [];
                 for (let i = 0; i < anzahl; i++) {
-                    const s = at(streets, i), c = at(cts, i), n = at(hoods, i);
+                    const s = at(streets, i), c = at(cts, i);
                     const f = at(fNames, i), l = at(lNames, i), p = at(pCodes, i), h = at(hNumbers, i);
                     persons.push({
-                        concatID: [s.ID, c.ID, n.ID, f.ID, l.ID, String(p.ID), String(h.ID)].join('-'),
+                        concatID: [s.ID, c.ID, f.ID, l.ID, String(p.ID), String(h.ID)].join('-'),
                         streetName: s.streetName, cityName: c.cityName,
                         firstName: f.firstName, lastName: l.lastName,
                         postCode: p.postCode, houseNumber: h.houseNumber

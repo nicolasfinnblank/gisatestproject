@@ -26,14 +26,18 @@ sap.ui.define([
   // Wechsel zu einer Schwester-App. Im Launchpad ueber die Shell (Intent
   // <app>-display, wie in manifest.json/Work Zone hinterlegt) - dann bleibt
   // die App eingebettet. Ohne Shell (lokal) per Adresse.
-  function navigateTo(sApp) {
+  // sRoute (optional): Seite innerhalb der Ziel-App, z.B. "Runs(<ID>)".
+  function navigateTo(sApp, sRoute) {
     if (window.sap && sap.ushell && sap.ushell.Container) {
       sap.ushell.Container.getServiceAsync("CrossApplicationNavigation").then(function (oNav) {
-        oNav.toExternal({ target: { semanticObject: sApp, action: "display" } });
+        oNav.toExternal({
+          target: { semanticObject: sApp, action: "display" },
+          appSpecificRoute: sRoute ? "&/" + sRoute : undefined
+        });
       });
       return;
     }
-    window.location.href = appUrl(sApp);
+    window.location.href = appUrl(sApp) + (sRoute ? "#/" + sRoute : "");
   }
 
   // Adresse des CAP-Service RELATIV zur App (wie der Service-Pfad im manifest.json).
@@ -155,6 +159,12 @@ sap.ui.define([
         });
         oDialog.open();
       }).catch(function (e) { MessageToast.show("Fehler: " + e.message); });
+    },
+
+    // Klick auf einen eigenen Lauf: direkt dessen Detailseite im Tracking
+    // oeffnen (dort liegen Kopieren und Loeschen). Aufruf aus MyRunsNavigation.js.
+    openRun: function (sRunId) {
+      navigateTo("tracking", "Runs(" + sRunId + ")");
     },
 
     // Zur Tracking-Liste (Laeufe). Dort liegen Kopieren und Loeschen.

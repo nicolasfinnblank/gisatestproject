@@ -38,7 +38,7 @@ zwischen Systemen kopieren und im System wieder löschen.
 | `srv/external/BackendAPI_2.*` | Modell + Mock des Zielsystems **S4D** |
 | `srv/external/BackendAPI_3.*` | Modell + Mock des Zielsystems **S4Q** |
 | `app/annotations.cds` | Fiori-Elements-Annotationen (Tabellen/Spalten) |
-| `app/generator/webapp/` | UI 1: Lauf anlegen (Dialog) + meine letzten Läufe (`MyRuns`) |
+| `app/generator/webapp/` | UI 1: Lauf anlegen (Dialog) + meine letzten 5 Läufe (`MyRuns`, Klick → Tracking) |
 | `app/tracking/webapp/` | UI 2: Läufe mit Geschäftspartnern und Objekten; Kopieren/Löschen |
 | `app/systems/webapp/` | UI 3: Zielsysteme verwalten |
 | `test/integration.test.js` | Integrationstests (23) |

@@ -24,9 +24,11 @@ service GeneratorService {
         case status when 'created' then 3 when 'deleted' then 1 else 2 end as statusCriticality : Integer
     };
 
-    // Startseite des Generators: nur die EIGENEN Laeufe (Tracking zeigt alle).
+    // Startseite des Generators: fest die 5 neuesten EIGENEN Laeufe (Schnellblick).
+    // Alles Weitere - alle Laeufe, Kopieren, Loeschen - im Tracking.
     @readonly
-    entity MyRuns as projection on Runs where createdBy = $user;
+    entity MyRuns as projection on Runs where createdBy = $user
+        order by createdAt desc limit 5;
 
     // Tracking-Protokoll (alle Objekte, Tabelle System|Objekt|Schluessel).
     @readonly

@@ -19,10 +19,15 @@ Bezeichnung („Testfall 4711"), Ersteller, Zeitpunkt, Systemen, Status.
   Mehrfachauswahl, Standard vorbelegt) → Aktion `generateAndCreate` würfelt die
   Personen aus den Pools UND legt sie sofort in allen gewählten Systemen an
   (Street→City→Address→BusinessPartner je System). Kein separater Push mehr.
-  Die Liste darunter heißt **„Meine letzten Läufe"** (`MyRuns` = `Runs` where
-  `createdBy = $user`, neueste zuerst). Klick → Lauf mit Geschäftspartnern →
-  Person mit ihren Objekten (gleiche Seiten wie im Tracking, ohne Kopieren/
-  Löschen). Seit 17.09.2026 ersetzt das die frühere Quittung `GeneratorData`
+  Die Liste darunter heißt **„Meine letzten Läufe"**: fest die 5 neuesten
+  eigenen Läufe (`MyRuns` = `Runs` where `createdBy = $user` order by createdAt
+  desc limit 5), ohne Filterleiste/Suche. Klick auf eine Zeile springt direkt
+  auf die **Detailseite des Laufs im Tracking** (dort Kopieren/Löschen):
+  `ext/MyRunsNavigation.js` fängt `routing.onBeforeNavigation` ab und ruft
+  `openRun` (Launchpad: toExternal `tracking-display` + `&/Runs(<ID>)`, lokal:
+  Adresse). Die Route `MyRunsObjectPage` bleibt nur, damit FE Zeilen klickbar
+  macht. `Component.js` lädt die Erweiterung vorab (sonst „Attempt to load
+  Extension Controller … not successful"). Seit 17.09.2026 ersetzt das die frühere Quittung `GeneratorData`
   (unübersichtliche Personenliste, entfernt; alte HANA-Tabelle bleibt verwaist
   liegen, harmlos).
 - **Tracking-App:** Liste = Läufe (alle Nutzer sehen alle, Spalte „Erstellt
@@ -120,7 +125,7 @@ Bezeichnung („Testfall 4711"), Ersteller, Zeitpunkt, Systemen, Status.
   @requires `Generator`. Actions: `generateAndCreate(anzahl, label, systems : many
   String)` (leer = Default-System), `copyRun(run, sourceSystem, targetSystem)`,
   `deleteRun(run, system)`. Entities: Pools, `Runs` (read-only, ALLE Nutzer, mit `partners`
-  und `objects`), `MyRuns` (= Runs des angemeldeten Nutzers, Generator-Startseite),
+  und `objects`), `MyRuns` (= 5 neueste Runs des angemeldeten Nutzers, Generator-Startseite),
   `CreatedObjects` (read-only, `@cds.redirection.target`),
   `RunPartners` (= CreatedObjects where objectType='BusinessPartner'),
   `Systems` (CRUD). Alle drei Protokoll-Sichten haben ein berechnetes
@@ -149,7 +154,7 @@ Bezeichnung („Testfall 4711"), Ersteller, Zeitpunkt, Systemen, Status.
   gemockten Ziel-Backends (eindeutige Namen, getrennte In-Memory-Tabellen).
   In `package.json` unter `cds.requires` als zwei `odata`-Services registriert.
 - `app/annotations.cds`: FE-Annotationen für Runs (LineItem, PresentationVariant createdAt desc, Facets Lauf /
-  Geschäftspartner / Alle Objekte), MyRuns (nur Titel/Spalten/Filter),
+  Geschäftspartner / Alle Objekte), MyRuns (Titel/Spalten, nicht durchsuchbar),
   RunPartners,
   CreatedObjects, Systems. Facets zeigen auf `partners/@UI.PresentationVariant`
   bzw. `objects/@UI.PresentationVariant` (sortiert).
@@ -193,7 +198,12 @@ Bezeichnung („Testfall 4711"), Ersteller, Zeitpunkt, Systemen, Status.
    den Desktop-Ordner lesen, EPERM). **Nach Code-Änderungen echten Reload erzwingen**
    (`location.reload()`): eine `navigate` auf dieselbe URL mit anderem Hash lädt
    NICHT neu — alte JS/Metadaten bleiben im Speicher.
-8. UI5 lädt vom CDN ui5.sap.com (erstmalig evtl. langsam, dann gecacht).
+8. **Lokale `db.sqlite` hat veraltete Sichten:** Sie wird nur angelegt, wenn sie
+   fehlt. Ändert sich eine Sicht in `service.cds` (z. B. `MyRuns` limit 5), liefert
+   lokal weiter die alte Sicht. Abhilfe: `npx cds deploy --to sqlite:db.sqlite`
+   (Tests laufen in-memory und merken das nicht). Nach Deploys mit entfernten
+   Entities im Launchpad Browser-Cache leeren (alte manifest.json → FilterBar-Fehler).
+9. UI5 lädt vom CDN ui5.sap.com (erstmalig evtl. langsam, dann gecacht).
 
 ## Abgleich mit der Aufgabenstellung (Folien 16/17, geprüft 09.09.2026)
 Folie 17 Punkt für Punkt erfüllt: BTP-Web-App, mehrere Entitäten (die vier, die

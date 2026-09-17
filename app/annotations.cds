@@ -59,9 +59,10 @@ annotate GeneratorService.Runs with @UI.Facets: [
 ];
 
 //
-// --- Generator-Startseite: eigene Laeufe ---
-// Uebernimmt alle Runs-Annotationen (Detailseite, Sortierung neueste zuerst);
-// hier nur, was abweicht: Titel und keine Spalte/Filter "Erstellt von".
+// --- Generator-Startseite: die 5 neuesten eigenen Laeufe ---
+// Uebernimmt die Runs-Annotationen (Sortierung neueste zuerst); hier nur, was
+// abweicht: Titel und keine Spalte "Erstellt von". Filterleiste ist im
+// manifest.json ausgeblendet, der Klick fuehrt ins Tracking.
 //
 annotate GeneratorService.MyRuns with @UI.HeaderInfo: {
   TypeName: 'Lauf',
@@ -70,16 +71,15 @@ annotate GeneratorService.MyRuns with @UI.HeaderInfo: {
   Description: { Value: systems }
 };
 
+// Bei 5 Zeilen keine Suche (sonst erscheint ein Suchfeld in der Tabellenleiste).
+annotate GeneratorService.MyRuns with @Capabilities.SearchRestrictions.Searchable: false;
+
 annotate GeneratorService.MyRuns with @UI.LineItem: [
   { $Type: 'UI.DataField', Value: label },
   { $Type: 'UI.DataField', Value: createdAt },
   { $Type: 'UI.DataField', Value: systems },
   { $Type: 'UI.DataField', Value: partnerCount },
   { $Type: 'UI.DataField', Value: status, Criticality: statusCriticality }
-];
-
-annotate GeneratorService.MyRuns with @UI.SelectionFields: [
-  label, status
 ];
 
 // Geschaeftspartner des Laufs: eine Zeile je Person UND System.

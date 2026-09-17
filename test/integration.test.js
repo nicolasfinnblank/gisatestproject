@@ -122,19 +122,24 @@ describe('GISA Master Data Generator', () => {
       }
     });
 
-    it('MyRuns (Generator-Startseite) zeigt nur eigene Laeufe, neueste zuerst', async () => {
-      await POST(`${SRV}/generateAndCreate`, { anzahl: 1, label: 'bob alt' }, asBob);
+    it('MyRuns (Generator-Startseite) zeigt nur die 5 neuesten eigenen Laeufe', async () => {
+      for (let i = 1; i <= 6; i++) {
+        await POST(`${SRV}/generateAndCreate`, { anzahl: 1, label: `bob ${i}` }, asBob);
+      }
       await POST(`${SRV}/generateAndCreate`, { anzahl: 2, label: 'bob neu', systems: ['s4d', 's4q'] }, asBob);
       await POST(`${SRV}/generateAndCreate`, { anzahl: 1, label: 'alice' }, asAlice);
 
-      const mine = (await GET(`${SRV}/MyRuns?$orderby=createdAt desc&$expand=partners`, asBob)).data.value;
-      expect(mine.length).to.be.greaterThan(1);
-      expect(mine.every(r => r.createdBy === 'bob')).to.equal(true);
-      expect(mine[0].label).to.equal('bob neu');
-      expect(mine[0].partners.length).to.equal(4);              // 2 Personen x 2 Systeme
-      // Tracking (Runs) zeigt dagegen auch fremde Laeufe
+      const res = (await GET(`${SRV}/MyRuns?$count=true&$orderby=createdAt desc&$expand=partners`, asBob)).data;
+      expect(res.value.length).to.equal(5);
+      expect(res['@odata.count']).to.equal(5);
+      expect(res.value.every(r => r.createdBy === 'bob')).to.equal(true);
+      expect(res.value[0].label).to.equal('bob neu');
+      expect(res.value[0].partners.length).to.equal(4);         // 2 Personen x 2 Systeme
+      expect(res.value.map(r => r.label)).to.not.include('bob 1');
+      // Tracking (Runs) zeigt dagegen alle, auch fremde Laeufe
       const all = (await GET(`${SRV}/Runs`, asBob)).data.value;
       expect(all.some(r => r.createdBy === 'alice')).to.equal(true);
+      expect(all.filter(r => r.createdBy === 'bob').length).to.be.greaterThan(5);
     });
 
     it('lehnt unbekannte Zielsysteme und unsinnige Anzahl ab (400)', async () => {

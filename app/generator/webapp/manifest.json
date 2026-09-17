@@ -75,11 +75,6 @@
           "pattern": "MyRuns({key}):?query:",
           "name": "MyRunsObjectPage",
           "target": "MyRunsObjectPage"
-        },
-        {
-          "pattern": "MyRuns({key})/partners({key2}):?query:",
-          "name": "RunPartnersObjectPage",
-          "target": "RunPartnersObjectPage"
         }
       ],
       "targets": {
@@ -91,6 +86,7 @@
             "settings": {
               "entitySet": "MyRuns",
               "variantManagement": "None",
+              "hideFilterBar": true,
               "navigation": {
                 "MyRuns": {
                   "detail": {
@@ -129,34 +125,17 @@
           "name": "sap.fe.templates.ObjectPage",
           "options": {
             "settings": {
-              "entitySet": "MyRuns",
-              "controlConfiguration": {
-                "partners/@com.sap.vocabularies.UI.v1.LineItem": {
-                  "tableSettings": {
-                    "type": "GridTable",
-                    "selectionMode": "None",
-                    "rowCountMode": "Auto"
-                  }
-                }
-              },
-              "navigation": {
-                "partners": {
-                  "detail": {
-                    "route": "RunPartnersObjectPage"
-                  }
-                }
-              }
+              "entitySet": "MyRuns"
             }
           }
-        },
-        "RunPartnersObjectPage": {
-          "type": "Component",
-          "id": "RunPartnersObjectPage",
-          "name": "sap.fe.templates.ObjectPage",
-          "options": {
-            "settings": {
-              "contextPath": "/MyRuns/partners"
-            }
+        }
+      }
+    },
+    "extends": {
+      "extensions": {
+        "sap.ui.controllerExtensions": {
+          "sap.fe.templates.ListReport.ListReportController#gisamdg.generator::MyRunsList": {
+            "controllerName": "gisamdg.generator.ext.MyRunsNavigation"
           }
         }
       }

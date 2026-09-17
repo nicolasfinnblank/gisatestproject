@@ -21,6 +21,9 @@ Bezeichnung, Ersteller, Zeitpunkt, Systemen und Status.
     (Mehrfachauswahl, Standard vorbelegt). Aktion `generateAndCreate` würfelt die
     Personen und legt sie sofort in allen gewählten Systemen an
     (Street → City → Address → BusinessPartner je System).
+  - Nach dem Anlegen Meldung mit Knopf **„Lauf öffnen"** → Detailseite des neuen
+    Laufs im Tracking (`runID` aus `CreateResult`). Ein Klick auf „Anlegen" = genau
+    ein Lauf, auch bei mehreren Systemen.
   - Startseite **„Meine letzten Läufe"**: fest die 5 neuesten eigenen Läufe
     (`MyRuns`), ohne Filterleiste und Suche. Klick auf eine Zeile öffnet die
     **Detailseite des Laufs im Tracking** (`ext/MyRunsNavigation.js`).
@@ -29,8 +32,11 @@ Bezeichnung, Ersteller, Zeitpunkt, Systemen und Status.
   - Detailseite: Laufdaten + Tabelle Geschäftspartner (eine Zeile je Person UND
     System). Klick auf eine Person → ihre vier Objekte mit Nummern.
   - Kopfknöpfe „In weiteres System kopieren" (`copyRun`, Kopien hängen am selben
-    Lauf mit `sourceSystem`) und „In System löschen" (`deleteRun`, löscht im
-    Backend, Protokoll bleibt mit `status = 'deleted'` + `deletedAt`). Beides nur
+    Lauf mit `sourceSystem`) und „In System löschen" (Mehrfachauswahl der
+    Systeme, in denen der Lauf liegt; nur bei genau einem System vorbelegt. Die UI
+    ruft `deleteRun` nacheinander je System auf und stoppt beim ersten Fehler mit
+    Angabe, was schon gelöscht ist. Protokoll bleibt mit `status = 'deleted'` +
+    `deletedAt`). Beides nur
     für eigene Läufe (sonst 403).
   - Reiter „Alle angelegten Objekte" (Folie 16) ist **ausgeblendet**, Entscheidung
     mit Christian offen. Wieder einblenden = eine Facet-Zeile in `annotations.cds`.
@@ -144,7 +150,11 @@ Bezeichnung, Ersteller, Zeitpunkt, Systemen und Status.
    mit `height: "100%"` + CSS `html, body, #content { height: 100% }`.
 6. **Eigene Knöpfe:** FE ruft unbound Actions über `DataFieldForAction` nicht auf.
    Knöpfe im manifest + Handler in `ext/*.js` (POST per `fetch`).
-7. **Controller-Erweiterung im Generator:** `Component.js` muss
+7. **Tabelle ohne Filterleiste neu laden:** `extensionAPI.refresh()` tut bei
+   ausgeblendeter Filterleiste nichts. `GeneratorActions.refresh` nutzt deshalb
+   `oApi.byId("fe::table::MyRuns::LineItem::Table").refresh()` (die stabile
+   Table-API; die ID ohne `::Table` ist intern und wirft einen Fehler).
+   **Controller-Erweiterung im Generator:** `Component.js` muss
    `ext/MyRunsNavigation` vorab laden, sonst „Attempt to load Extension Controller
    … not successful" und die Startseite bleibt leer. Die Route `MyRunsObjectPage`
    bleibt nur, damit FE Zeilen klickbar macht.

@@ -20,8 +20,8 @@ zwischen Systemen kopieren und im System wieder löschen.
   Seite mit den vier im System angelegten Objekten und ihren Schlüsseln.
 - **Kopieren** – überträgt die Geschäftspartner eines Laufs aus einem System in
   ein weiteres (`copyRun`); die Kopien hängen am selben Lauf.
-- **Löschen** – entfernt die Objekte eines Laufs in einem System wieder
-  (`deleteRun`); das Protokoll bleibt mit Status „deleted" erhalten.
+- **Löschen** – entfernt die Objekte eines Laufs in einem oder mehreren Systemen
+  wieder (`deleteRun` je System); das Protokoll bleibt mit Status „Gelöscht" erhalten.
 - **Mehrbenutzer-sicher** – Kopieren und Löschen nur für eigene Läufe; die
   Startseite des Generators zeigt nur die eigenen Läufe.
 - **Fiori-Elements-UIs** – drei Oberflächen: Generator, Tracking, Zielsysteme.

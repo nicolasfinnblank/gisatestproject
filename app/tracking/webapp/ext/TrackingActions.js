@@ -4,11 +4,12 @@ sap.ui.define([
   "sap/m/Dialog",
   "sap/m/Button",
   "sap/m/Select",
+  "sap/m/MultiComboBox",
   "sap/ui/core/Item",
   "sap/m/Label",
   "sap/m/Text",
   "sap/m/VBox"
-], function (MessageToast, MessageBox, Dialog, Button, Select, Item, Label, Text, VBox) {
+], function (MessageToast, MessageBox, Dialog, Button, Select, MultiComboBox, Item, Label, Text, VBox) {
   "use strict";
 
   // Adresse der Schwester-Apps als Rueckfall, wenn keine Launchpad-Shell da ist
@@ -148,8 +149,8 @@ sap.ui.define([
       }).catch(function (e) { MessageToast.show("Fehler: " + e.message); });
     },
 
-    // Loescht die Objekte DIESES Laufs in einem System wieder aus dem Backend.
-    // Das Protokoll bleibt erhalten (Status "deleted").
+    // Loescht die Objekte DIESES Laufs in einem oder mehreren Systemen wieder
+    // aus dem Backend. Das Protokoll bleibt erhalten (Status "Gelöscht").
     onDelete: function (oContext) {
       const oApi = this;
       const oRun = currentRun(oContext);
@@ -158,7 +159,14 @@ sap.ui.define([
       if (!aIn.length) { MessageToast.show("Der Lauf ist bereits überall gelöscht."); return; }
 
       loadSystems().then(function (aSystems) {
-        const oSelect = systemSelect(aSystems.filter(function (s) { return aIn.indexOf(s.name) >= 0; }));
+        // Mehrfachauswahl wie beim Anlegen. Nur bei genau einem System vorbelegt:
+        // Loeschen ist unwiderruflich, mehrere Systeme soll man bewusst anklicken.
+        const aSources = aSystems.filter(function (s) { return aIn.indexOf(s.name) >= 0; });
+        const oBox = new MultiComboBox({ width: "100%" });
+        aSources.forEach(function (s) {
+          oBox.addItem(new Item({ key: s.ID, text: s.name + (s.description ? " – " + s.description : "") }));
+        });
+        if (aSources.length === 1) { oBox.setSelectedKeys([aSources[0].ID]); }
 
         const oDialog = new Dialog({
           title: "Lauf \"" + oRun.label + "\" löschen",
@@ -166,24 +174,37 @@ sap.ui.define([
           contentWidth: "28rem",
           content: new VBox({
             items: [
-              new Text({ text: "Löscht alle Objekte dieses Laufs im gewählten System unwiderruflich aus dem SAP-System. Das Protokoll bleibt erhalten (Status \"deleted\")." }).addStyleClass("sapUiSmallMarginBottom"),
-              new Label({ text: "System:", labelFor: oSelect }), oSelect
+              new Text({ text: "Löscht alle Objekte dieses Laufs in den gewählten Systemen unwiderruflich aus dem SAP-System. Das Protokoll bleibt erhalten (Status \"Gelöscht\")." }).addStyleClass("sapUiSmallMarginBottom"),
+              new Label({ text: "Systeme (Mehrfachauswahl):", labelFor: oBox }), oBox
             ]
           }).addStyleClass("sapUiContentPadding"),
           beginButton: new Button({
             text: "Löschen",
             type: "Reject",
             press: function () {
+              const aIds = oBox.getSelectedKeys();
+              if (!aIds.length) { MessageToast.show("Bitte mindestens ein System wählen."); return; }
               oDialog.setBusy(true);
-              callAction("deleteRun", { run: oRun.ID, system: oSelect.getSelectedKey() })
-                .then(function (msg) {
-                  oDialog.close();
-                  MessageToast.show(msg || "Gelöscht");
-                  refresh(oApi);
-                }).catch(function (e) {
-                  oDialog.setBusy(false);
-                  MessageBox.error("Löschen fehlgeschlagen: " + e.message);
+              // Nacheinander je System die bestehende Aktion deleteRun aufrufen.
+              // Scheitert ein System, stoppen und genau sagen, was schon geloescht ist.
+              const aDone = [];
+              aIds.reduce(function (p, sId) {
+                return p.then(function () {
+                  return callAction("deleteRun", { run: oRun.ID, system: sId })
+                    .then(function (msg) { aDone.push(msg); })
+                    .catch(function (e) { e.system = sId; throw e; });
                 });
+              }, Promise.resolve()).then(function () {
+                oDialog.close();
+                MessageToast.show(aDone.join("\n") || "Gelöscht");
+                refresh(oApi);
+              }).catch(function (e) {
+                oDialog.close();
+                refresh(oApi);
+                const oSys = aSources.find(function (s) { return s.ID === e.system; });
+                MessageBox.error("Löschen in " + (oSys ? oSys.name : e.system) + " fehlgeschlagen: " + e.message
+                  + (aDone.length ? "\n\nBereits erledigt:\n" + aDone.join("\n") : ""));
+              });
             }
           }),
           endButton: new Button({ text: "Abbrechen", press: function () { oDialog.close(); } }),

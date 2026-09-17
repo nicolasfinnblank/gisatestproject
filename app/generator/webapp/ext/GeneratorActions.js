@@ -70,11 +70,14 @@ sap.ui.define([
     }).then(function (r) { return r.json(); }).then(function (j) { return j.value || []; });
   }
 
-  // Tabelle nach einer Aktion neu laden (defensiv ueber die FE-ExtensionAPI).
+  // Tabelle "Meine letzten Läufe" nach dem Anlegen neu laden. oApi.refresh()
+  // allein genuegt nicht: ohne Filterleiste loest es keine neue Suche aus.
   function refresh(oApi) {
     try {
-      if (oApi && typeof oApi.refresh === "function") { oApi.refresh(); }
-    } catch (e) { /* notfalls 'Go' druecken */ }
+      const oTable = oApi && oApi.byId && oApi.byId("fe::table::MyRuns::LineItem::Table");
+      if (oTable && typeof oTable.refresh === "function") { oTable.refresh(); }
+      else if (oApi && typeof oApi.refresh === "function") { oApi.refresh(); }
+    } catch (e) { /* notfalls Seite neu laden */ }
   }
 
   // Vorschlag fuer die Bezeichnung: "Testdaten 09.09.2026 14:30".
@@ -133,11 +136,17 @@ sap.ui.define([
               }).then(function (res) {
                 oDialog.close();
                 refresh(oApi);
+                // "Lauf öffnen": direkt die Detailseite des neuen Laufs im Tracking.
+                // Ein Klick auf "Anlegen" ergibt immer genau EINEN Lauf, auch bei
+                // mehreren Systemen (und auch bei Abbruch, dann "… (abgebrochen)").
+                const sOpen = "Lauf öffnen";
                 const oOpts = {
-                  actions: ["Zum Tracking", MessageBox.Action.OK],
-                  emphasizedAction: "Zum Tracking",
+                  actions: [sOpen, MessageBox.Action.OK],
+                  emphasizedAction: sOpen,
                   onClose: function (sAction) {
-                    if (sAction === "Zum Tracking") { navigateTo("tracking"); }
+                    if (sAction !== sOpen) { return; }
+                    if (res && res.runID) { navigateTo("tracking", "Runs(" + res.runID + ")"); }
+                    else { navigateTo("tracking"); }
                   }
                 };
                 if (res && res.ok === false) {

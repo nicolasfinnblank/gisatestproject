@@ -14,26 +14,11 @@ function toBackendHouseNumber(raw) {
 
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
+// Zufaellige Sortierung in der Datenbank: HANA kennt RAND(), SQLite RANDOM().
+const RANDOM = () => cds.db.kind === 'hana' ? 'RAND()' : 'RANDOM()';
+
 module.exports = class GeneratorService extends cds.ApplicationService {
     async init() {
-
-        // Lokaler Komfort: Startet die App auf einer frischen SQLite-Datei
-        // (z.B. via 'npm start', das nicht automatisch deployt), werden die
-        // Tabellen einmalig angelegt. Greift nur auf SQLite – in Produktion
-        // (HANA) wird hier nichts deployt.
-        if (cds.db?.kind !== 'hana') {
-            try {
-                await cds.run(SELECT.one.from('gisa.mdg.Runs'));
-            } catch (err) {
-                if (err.message.includes('no such table')) {
-                    const url = cds.env.requires.db?.credentials?.url || 'db.sqlite';
-                    console.log(`🛠️  Tabellen fehlen – deploye Schema lokal nach ${url} …`);
-                    await cds.deploy(await cds.load('*')).to('sqlite:' + url);
-                    console.log("✅ Lokales Deployment fertig.");
-                }
-            }
-        }
-
         const {
             StreetNames, Cities, Neighborhoods,
             FirstNames, LastNames, PostCodes,
@@ -164,14 +149,16 @@ module.exports = class GeneratorService extends cds.ApplicationService {
                         : 'Kein Default-Zielsystem konfiguriert.');
                 }
 
-                // 1. Stammdaten-Pools laden
+                // 1. Aus jeder Namensliste nur so viele zufaellige Eintraege holen,
+                //    wie Personen gebraucht werden - nicht die ganze Liste (allein
+                //    die Strassen sind ~20.600 Zeilen). Die Datenbank mischt.
+                const sample = (entity) => SELECT.from(entity).orderBy(RANDOM()).limit(anzahl);
                 const [streets, cts, hoods, fNames, lNames, pCodes, hNumbers] = await Promise.all([
-                    SELECT.from(StreetNames), SELECT.from(Cities),
-                    SELECT.from(Neighborhoods), SELECT.from(FirstNames),
-                    SELECT.from(LastNames), SELECT.from(PostCodes),
-                    SELECT.from(HouseNumbers)
+                    sample(StreetNames), sample(Cities), sample(Neighborhoods),
+                    sample(FirstNames), sample(LastNames), sample(PostCodes),
+                    sample(HouseNumbers)
                 ]);
-                if (streets.length === 0) {
+                if ([streets, cts, hoods, fNames, lNames, pCodes, hNumbers].some(r => !r.length)) {
                     return req.error(500, 'Stammdaten sind leer. Bitte die CSV-Dateien prüfen.');
                 }
 
@@ -182,11 +169,14 @@ module.exports = class GeneratorService extends cds.ApplicationService {
                     partnerCount: anzahl, systems: '', status: 'created'
                 });
 
-                // 3. Personen wuerfeln
+                // 3. Personen zusammensetzen: i-ter Eintrag jeder Stichprobe. Ist eine
+                //    Liste kuerzer als die Anzahl (z.B. ~120 Nachnamen), zufaellig
+                //    einen der gezogenen Eintraege wiederholen.
+                const at = (rows, i) => rows[i] ?? pick(rows);
                 const persons = [];
                 for (let i = 0; i < anzahl; i++) {
-                    const s = pick(streets), c = pick(cts), n = pick(hoods);
-                    const f = pick(fNames), l = pick(lNames), p = pick(pCodes), h = pick(hNumbers);
+                    const s = at(streets, i), c = at(cts, i), n = at(hoods, i);
+                    const f = at(fNames, i), l = at(lNames, i), p = at(pCodes, i), h = at(hNumbers, i);
                     persons.push({
                         concatID: [s.ID, c.ID, n.ID, f.ID, l.ID, String(p.ID), String(h.ID)].join('-'),
                         streetName: s.streetName, cityName: c.cityName,

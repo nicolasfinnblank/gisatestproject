@@ -142,6 +142,31 @@ describe('GISA Master Data Generator', () => {
       expect(all.filter(r => r.createdBy === 'bob').length).to.be.greaterThan(5);
     });
 
+    it('holt aus den Namenslisten nur Stichproben, auch bei mehr Personen als Nachnamen', async () => {
+      // Leseabfragen auf die Namenslisten mitschreiben: mit Grenze (limit)?
+      const reads = [];
+      let spy = true;
+      cds.db.before('READ', (req) => {
+        const name = req.target?.name || '';
+        if (spy && /StreetNames|LastNames/.test(name)) reads.push(req.query.SELECT.limit?.rows?.val);
+      });
+      try {
+        // 150 Personen, aber es gibt nur rund 120 Nachnamen: Wiederholungen noetig.
+        await POST(`${SRV}/generateAndCreate`, { anzahl: 150, label: 'Stichprobe', systems: ['s4d'] }, asDave);
+        const run = await latestRun(asDave, 'dave');
+        expect(run.partnerCount).to.equal(150);
+        expect(run.partners.length).to.equal(150);
+        expect(run.partners.every(p => p.lastName && p.streetName)).to.equal(true);
+        // Namen sind gemischt, nicht alle gleich
+        expect(new Set(run.partners.map(p => p.streetName)).size).to.be.greaterThan(100);
+        // Keine Liste wurde komplett geladen: jede Abfrage hatte die Grenze 150.
+        expect(reads.length).to.equal(2);
+        expect(reads.every(n => n === 150)).to.equal(true);
+      } finally {
+        spy = false;
+      }
+    });
+
     it('lehnt unbekannte Zielsysteme und unsinnige Anzahl ab (400)', async () => {
       await expectStatus(POST(`${SRV}/generateAndCreate`, { anzahl: 1, systems: ['nope'] }, asAlice), 400);
       await expectStatus(POST(`${SRV}/generateAndCreate`, { anzahl: 0 }, asAlice), 400);

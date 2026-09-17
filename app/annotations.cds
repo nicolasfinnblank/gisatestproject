@@ -17,7 +17,8 @@ annotate GeneratorService.Runs with {
   createdAt    @title: 'Erstellt am';
   partnerCount @title: 'Geschäftspartner';
   systems      @title: 'Systeme';
-  status       @title: 'Status';
+  status       @UI.Hidden;
+  statusText   @title: 'Status';
 };
 
 annotate GeneratorService.Runs with @UI.LineItem: [
@@ -26,7 +27,7 @@ annotate GeneratorService.Runs with @UI.LineItem: [
   { $Type: 'UI.DataField', Value: createdBy },
   { $Type: 'UI.DataField', Value: systems },
   { $Type: 'UI.DataField', Value: partnerCount },
-  { $Type: 'UI.DataField', Value: status, Criticality: statusCriticality }
+  { $Type: 'UI.DataField', Value: statusText, Criticality: statusCriticality }
 ];
 
 annotate GeneratorService.Runs with @UI.PresentationVariant: {
@@ -35,7 +36,7 @@ annotate GeneratorService.Runs with @UI.PresentationVariant: {
 };
 
 annotate GeneratorService.Runs with @UI.SelectionFields: [
-  createdBy, status, label
+  createdBy, statusText, label
 ];
 
 annotate GeneratorService.Runs with @UI.FieldGroup #Main: {
@@ -45,7 +46,7 @@ annotate GeneratorService.Runs with @UI.FieldGroup #Main: {
     { $Type: 'UI.DataField', Value: createdBy },
     { $Type: 'UI.DataField', Value: systems },
     { $Type: 'UI.DataField', Value: partnerCount },
-    { $Type: 'UI.DataField', Value: status, Criticality: statusCriticality }
+    { $Type: 'UI.DataField', Value: statusText, Criticality: statusCriticality }
   ]
 };
 
@@ -79,7 +80,7 @@ annotate GeneratorService.MyRuns with @UI.LineItem: [
   { $Type: 'UI.DataField', Value: createdAt },
   { $Type: 'UI.DataField', Value: systems },
   { $Type: 'UI.DataField', Value: partnerCount },
-  { $Type: 'UI.DataField', Value: status, Criticality: statusCriticality }
+  { $Type: 'UI.DataField', Value: statusText, Criticality: statusCriticality }
 ];
 
 // Geschaeftspartner des Laufs: eine Zeile je Person UND System.
@@ -97,7 +98,8 @@ annotate GeneratorService.RunPartners with {
   system         @title: 'System';
   objectKey      @title: 'Geschäftspartner-Nr.';
   sourceSystem   @title: 'Kopiert aus';
-  status         @title: 'Status';
+  status         @UI.Hidden;
+  statusText     @title: 'Status';
   createdAt      @title: 'Angelegt am';
   deletedAt      @title: 'Gelöscht am';
 };
@@ -114,7 +116,7 @@ annotate GeneratorService.RunPartners with @UI.LineItem: [
   { $Type: 'UI.DataField', Value: cityName,    ![@UI.Importance]: #High },
   { $Type: 'UI.DataField', Value: system,      ![@UI.Importance]: #High },
   { $Type: 'UI.DataField', Value: objectKey,   ![@UI.Importance]: #High },
-  { $Type: 'UI.DataField', Value: status, Criticality: statusCriticality, ![@UI.Importance]: #High }
+  { $Type: 'UI.DataField', Value: statusText, Criticality: statusCriticality, ![@UI.Importance]: #High }
 ];
 
 annotate GeneratorService.RunPartners with @UI.PresentationVariant: {
@@ -142,7 +144,7 @@ annotate GeneratorService.RunPartners with @UI.FieldGroup #Person: {
     { $Type: 'UI.DataField', Value: cityName },
     { $Type: 'UI.DataField', Value: system },
     { $Type: 'UI.DataField', Value: objectKey },
-    { $Type: 'UI.DataField', Value: status, Criticality: statusCriticality },
+    { $Type: 'UI.DataField', Value: statusText, Criticality: statusCriticality },
     { $Type: 'UI.DataField', Value: sourceSystem },
     { $Type: 'UI.DataField', Value: createdAt },
     { $Type: 'UI.DataField', Value: deletedAt }
@@ -158,7 +160,7 @@ annotate GeneratorService.RunPartners with @UI.Facets: [
 annotate GeneratorService.CreatedObjects with @UI.LineItem #Object: [
   { $Type: 'UI.DataField', Value: objectType },
   { $Type: 'UI.DataField', Value: objectKey },
-  { $Type: 'UI.DataField', Value: status, Criticality: statusCriticality },
+  { $Type: 'UI.DataField', Value: statusText, Criticality: statusCriticality },
   { $Type: 'UI.DataField', Value: createdAt },
   { $Type: 'UI.DataField', Value: deletedAt }
 ];
@@ -180,7 +182,8 @@ annotate GeneratorService.CreatedObjects with {
   objectType     @title: 'Objekttyp';
   objectKey      @title: 'Schlüssel';
   sourceSystem   @title: 'Kopiert aus';
-  status         @title: 'Status';
+  status         @UI.Hidden;
+  statusText     @title: 'Status';
   createdBy      @title: 'Erstellt von';
   createdAt      @title: 'Angelegt am';
   deletedAt      @title: 'Gelöscht am';
@@ -193,7 +196,7 @@ annotate GeneratorService.CreatedObjects with @UI.LineItem: [
   { $Type: 'UI.DataField', Value: system },
   { $Type: 'UI.DataField', Value: objectType },
   { $Type: 'UI.DataField', Value: objectKey },
-  { $Type: 'UI.DataField', Value: status, Criticality: statusCriticality },
+  { $Type: 'UI.DataField', Value: statusText, Criticality: statusCriticality },
   { $Type: 'UI.DataField', Value: sourceSystem },
   { $Type: 'UI.DataField', Value: createdAt },
   { $Type: 'UI.DataField', Value: deletedAt }

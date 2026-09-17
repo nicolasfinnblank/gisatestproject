@@ -1,7 +1,7 @@
 _schema-version: 3.3.0
 ID: gisa-master-data-generator
 version: 1.0.0
-description: "A simple CAP project."
+description: "GISA Master Data Generator: erzeugt Testdaten (Geschäftspartner) in SAP-S/4HANA-Systemen"
 parameters:
   enable-parallel-deployments: true
   deploy_mode: html5-repo

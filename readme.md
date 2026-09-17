@@ -41,7 +41,7 @@ zwischen Systemen kopieren und im System wieder löschen.
 | `app/generator/webapp/` | UI 1: Lauf anlegen (Dialog) + meine letzten 5 Läufe (`MyRuns`, Klick → Tracking) |
 | `app/tracking/webapp/` | UI 2: Läufe mit Geschäftspartnern und Objekten; Kopieren/Löschen |
 | `app/systems/webapp/` | UI 3: Zielsysteme verwalten |
-| `test/integration.test.js` | Integrationstests (23) |
+| `test/integration.test.js` | Integrationstests (24) |
 | `mta.yaml` | Deployment-Beschreibung für SAP BTP (Backend, DB, Fiori-Apps) |
 
 ## Lokal starten (auch für Kollegen)
@@ -65,10 +65,10 @@ Der Server läuft auf <http://localhost:4004>, die drei Oberflächen unter:
 Lokal ist **keine Anmeldung** nötig (Entwicklungs-Authentifizierung `dummy`,
 Nutzername `privileged`). `cds watch` mockt beide Zielsysteme automatisch (unter
 `/odata/v4/backend-api-2` bzw. `…-3`), sodass Anlegen, Kopieren und Löschen
-vollständig funktionieren; die Daten liegen in `db.sqlite` und bleiben zwischen
-Neustarts erhalten. Die Mock-Logik in `srv/external/_mockBackend.js` bildet die
+vollständig funktionieren. Die Datenbank liegt nur im Arbeitsspeicher: Jeder
+Start beginnt frisch mit den Startdaten aus `db/data/`, angelegte Läufe sind nach
+einem Neustart weg. Die Mock-Logik in `srv/external/_mockBackend.js` bildet die
 Validierungen und die vom Backend vergebenen Nummern des echten Systems nach.
-Zum Zurücksetzen einfach `db.sqlite` löschen.
 
 Die Navigation zwischen den drei Apps funktioniert lokal über die Adresszeile;
 im Launchpad läuft sie über die Kacheln bzw. die Shell.
@@ -76,7 +76,7 @@ im Launchpad läuft sie über die Kacheln bzw. die Shell.
 ## Tests
 
 ```bash
-npm test           # 23 Integrationstests (jest + cds.test)
+npm test           # 24 Integrationstests (jest + cds.test)
 ```
 
 Geprüft werden u. a. Authentifizierung/Rollen, Generieren & anlegen in einem
@@ -87,7 +87,7 @@ und in mehreren Systemen, zentrales Tracking, Kopieren und Löschen je Lauf
 
 | | Datenbank | Authentifizierung | Backends |
 |---|---|---|---|
-| **Entwicklung** | SQLite (`db.sqlite`) | dummy | lokale Mocks |
+| **Entwicklung** | SQLite im Arbeitsspeicher | dummy | lokale Mocks |
 | **Produktion** | SAP HANA | XSUAA | echte S/4HANA-Systeme (per Destination) |
 
 ## Deployment auf SAP BTP

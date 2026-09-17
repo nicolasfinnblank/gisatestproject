@@ -20,7 +20,9 @@ service GeneratorService {
         *,
         // Geschaeftspartner des Laufs (eine Zeile je Person UND System).
         partners : Association to many RunPartners on partners.run = $self,
-        // Farbe fuer die UI: 3 = gruen (angelegt), 2 = gelb (teilweise), 1 = rot (geloescht)
+        // Anzeige in der UI: Status auf Deutsch und als Farbe (3 gruen, 2 gelb, 1 rot)
+        case status when 'created' then 'Angelegt' when 'deleted' then 'Gelöscht'
+                    else 'Teilweise gelöscht' end as statusText : String,
         case status when 'created' then 3 when 'deleted' then 1 else 2 end as statusCriticality : Integer
     };
 
@@ -38,7 +40,9 @@ service GeneratorService {
         // Anzeige-Reihenfolge der Objekttypen: Geschaeftspartner zuerst.
         case objectType when 'BusinessPartner' then 1 when 'Address' then 2
                         when 'Street' then 3 else 4 end as objectOrder : Integer,
-        // Farbe fuer die UI: 3 = gruen (angelegt), 2 = gelb (teilweise), 1 = rot (geloescht)
+        // Anzeige in der UI: Status auf Deutsch und als Farbe (3 gruen, 2 gelb, 1 rot)
+        case status when 'created' then 'Angelegt' when 'deleted' then 'Gelöscht'
+                    else 'Teilweise gelöscht' end as statusText : String,
         case status when 'created' then 3 when 'deleted' then 1 else 2 end as statusCriticality : Integer
     };
 
@@ -51,7 +55,9 @@ service GeneratorService {
         objects : Association to many CreatedObjects
             on objects.run.ID = run.ID and objects.sourceConcatID = sourceConcatID
                and objects.system = system,
-        // Farbe fuer die UI: 3 = gruen (angelegt), 2 = gelb (teilweise), 1 = rot (geloescht)
+        // Anzeige in der UI: Status auf Deutsch und als Farbe (3 gruen, 2 gelb, 1 rot)
+        case status when 'created' then 'Angelegt' when 'deleted' then 'Gelöscht'
+                    else 'Teilweise gelöscht' end as statusText : String,
         case status when 'created' then 3 when 'deleted' then 1 else 2 end as statusCriticality : Integer
     } where objectType = 'BusinessPartner';
 

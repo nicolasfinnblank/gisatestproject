@@ -68,28 +68,33 @@
       "routes": [
         {
           "pattern": ":?query:",
-          "name": "GeneratorDataList",
-          "target": "GeneratorDataList"
+          "name": "MyRunsList",
+          "target": "MyRunsList"
         },
         {
-          "pattern": "GeneratorData({key}):?query:",
-          "name": "GeneratorDataObjectPage",
-          "target": "GeneratorDataObjectPage"
+          "pattern": "MyRuns({key}):?query:",
+          "name": "MyRunsObjectPage",
+          "target": "MyRunsObjectPage"
+        },
+        {
+          "pattern": "MyRuns({key})/partners({key2}):?query:",
+          "name": "RunPartnersObjectPage",
+          "target": "RunPartnersObjectPage"
         }
       ],
       "targets": {
-        "GeneratorDataList": {
+        "MyRunsList": {
           "type": "Component",
-          "id": "GeneratorDataList",
+          "id": "MyRunsList",
           "name": "sap.fe.templates.ListReport",
           "options": {
             "settings": {
-              "entitySet": "GeneratorData",
+              "entitySet": "MyRuns",
               "variantManagement": "None",
               "navigation": {
-                "GeneratorData": {
+                "MyRuns": {
                   "detail": {
-                    "route": "GeneratorDataObjectPage"
+                    "route": "MyRunsObjectPage"
                   }
                 }
               },
@@ -118,13 +123,39 @@
             }
           }
         },
-        "GeneratorDataObjectPage": {
+        "MyRunsObjectPage": {
           "type": "Component",
-          "id": "GeneratorDataObjectPage",
+          "id": "MyRunsObjectPage",
           "name": "sap.fe.templates.ObjectPage",
           "options": {
             "settings": {
-              "entitySet": "GeneratorData"
+              "entitySet": "MyRuns",
+              "controlConfiguration": {
+                "partners/@com.sap.vocabularies.UI.v1.LineItem": {
+                  "tableSettings": {
+                    "type": "GridTable",
+                    "selectionMode": "None",
+                    "rowCountMode": "Auto"
+                  }
+                }
+              },
+              "navigation": {
+                "partners": {
+                  "detail": {
+                    "route": "RunPartnersObjectPage"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "RunPartnersObjectPage": {
+          "type": "Component",
+          "id": "RunPartnersObjectPage",
+          "name": "sap.fe.templates.ObjectPage",
+          "options": {
+            "settings": {
+              "contextPath": "/MyRuns/partners"
             }
           }
         }

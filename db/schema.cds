@@ -54,26 +54,6 @@ annotate HouseNumbers with @assert.unique :
     houseNumber : [ houseNumber ],
 };
 
-// Quittung des LETZTEN Laufs je Nutzer: die zuletzt generierten Personen.
-// Wird beim naechsten Lauf des Nutzers geleert. Die dauerhafte Historie ist
-// Runs/CreatedObjects.
-entity GeneratorData
-{
-    key concatID : String;
-    streetName : String(100);
-    cityName : String(100);
-    neighborhoodName : String(100);
-    firstName : String(50);
-    lastName : String(50);
-    postCode : String(5);
-    houseNumber : String(3);
-
-    // Eigentuemer der Zeile (Login-ID). Jeder Nutzer sieht nur seine eigenen.
-    createdBy : String(255);
-    // Lauf, in dem diese Person erzeugt wurde.
-    run : Association to Runs;
-}
-
 // Katalog der Ziel-SAP-Systeme, in die gepusht werden kann. Lokal sind beide
 // als Mock hinterlegt (serviceName -> konfigurierter CAP-Service); in Produktion
 // zeigen sie auf echte S/4-Destinationen. Gemeinsame Konfiguration (nicht pro
@@ -134,7 +114,7 @@ entity CreatedObjects : cuid
     objectType     : String(50);
     // Vom Ziel-System vergebener Schluessel (z.B. businessPartnerNumber).
     objectKey      : String(100);
-    // Verweis auf die generierte Person (GeneratorData.concatID) - verbindet
+    // Kennung der generierten Person (concatID aus den Pool-IDs) - verbindet
     // dieselbe Person ueber alle Systeme hinweg.
     sourceConcatID : String;
     // Wer das Objekt angelegt hat (Login-ID).

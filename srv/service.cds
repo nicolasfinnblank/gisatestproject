@@ -12,18 +12,6 @@ service GeneratorService {
     entity PostCodes as projection on my.PostCodes;
     entity HouseNumbers as projection on my.HouseNumbers;
 
-    // Quittung des letzten Laufs: jeder Nutzer sieht nur seine eigenen Zeilen.
-    @readonly
-    @restrict: [
-        { grant: 'READ', to: 'Generator', where: 'createdBy = $user' }
-    ]
-    entity GeneratorData as projection on my.GeneratorData {
-        *,
-        // Wo liegt diese Person? (System + dort vergebene Geschaeftspartner-Nummer)
-        placements : Association to many RunPartners
-            on placements.sourceConcatID = concatID and placements.run = run
-    };
-
     // Laeufe (Testdaten-Erstellungen). Zentral: ALLE Nutzer sehen alle Laeufe,
     // damit das Team weiss, was in den Systemen liegt. Kopieren/Loeschen
     // pruefen den Eigentuemer in der Aktion.
@@ -35,6 +23,10 @@ service GeneratorService {
         // Farbe fuer die UI: 3 = gruen (angelegt), 2 = gelb (teilweise), 1 = rot (geloescht)
         case status when 'created' then 3 when 'deleted' then 1 else 2 end as statusCriticality : Integer
     };
+
+    // Startseite des Generators: nur die EIGENEN Laeufe (Tracking zeigt alle).
+    @readonly
+    entity MyRuns as projection on Runs where createdBy = $user;
 
     // Tracking-Protokoll (alle Objekte, Tabelle System|Objekt|Schluessel).
     @readonly

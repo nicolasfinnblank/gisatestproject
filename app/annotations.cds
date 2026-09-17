@@ -1,61 +1,6 @@
 using { GeneratorService } from '../srv/service.cds';
 
 //
-// --- Generator: Quittung des letzten Laufs ---
-//
-annotate GeneratorService.GeneratorData with @UI.HeaderInfo: {
-  TypeName: 'Person',
-  TypeNamePlural: 'Letzter Lauf',
-  Title: { Value: lastName },
-  Description: { Value: firstName }
-};
-
-annotate GeneratorService.GeneratorData with {
-  concatID         @UI.Hidden;
-  createdBy        @UI.Hidden  @title: 'Erstellt von';
-  run              @UI.Hidden  @title: 'Lauf';
-  firstName        @title: 'Vorname';
-  lastName         @title: 'Nachname';
-  streetName       @title: 'Straße';
-  houseNumber      @title: 'Hausnummer';
-  postCode         @title: 'PLZ';
-  cityName         @title: 'Stadt';
-  neighborhoodName @title: 'Stadtteil';
-};
-
-annotate GeneratorService.GeneratorData with @UI.LineItem: [
-  { $Type: 'UI.DataField', Value: firstName },
-  { $Type: 'UI.DataField', Value: lastName },
-  { $Type: 'UI.DataField', Value: streetName },
-  { $Type: 'UI.DataField', Value: houseNumber },
-  { $Type: 'UI.DataField', Value: postCode },
-  { $Type: 'UI.DataField', Value: cityName },
-  { $Type: 'UI.DataField', Value: run.label, Label: 'Lauf' }
-];
-
-annotate GeneratorService.GeneratorData with @UI.SelectionFields: [
-  lastName, cityName
-];
-
-annotate GeneratorService.GeneratorData with @UI.FieldGroup #Details: {
-  $Type: 'UI.FieldGroupType', Data: [
-    { $Type: 'UI.DataField', Value: firstName },
-    { $Type: 'UI.DataField', Value: lastName },
-    { $Type: 'UI.DataField', Value: streetName },
-    { $Type: 'UI.DataField', Value: houseNumber },
-    { $Type: 'UI.DataField', Value: postCode },
-    { $Type: 'UI.DataField', Value: cityName },
-    { $Type: 'UI.DataField', Value: neighborhoodName },
-    { $Type: 'UI.DataField', Value: run.label, Label: 'Lauf' }
-  ]
-};
-
-annotate GeneratorService.GeneratorData with @UI.Facets: [
-  { $Type: 'UI.ReferenceFacet', ID: 'Details',      Label: 'Person',                 Target: '@UI.FieldGroup#Details' },
-  { $Type: 'UI.ReferenceFacet', ID: 'Placements',   Label: 'Angelegt in',            Target: 'placements/@UI.LineItem#Placement' }
-];
-
-//
 // --- Tracking: Laeufe (Liste) mit Geschaeftspartnern und Objekten (Detail) ---
 //
 annotate GeneratorService.Runs with @UI.HeaderInfo: {
@@ -111,6 +56,30 @@ annotate GeneratorService.Runs with @UI.FieldGroup #Main: {
 annotate GeneratorService.Runs with @UI.Facets: [
   { $Type: 'UI.ReferenceFacet', ID: 'Main',     Label: 'Lauf',             Target: '@UI.FieldGroup#Main' },
   { $Type: 'UI.ReferenceFacet', ID: 'Partners', Label: 'Geschäftspartner', Target: 'partners/@UI.PresentationVariant' }
+];
+
+//
+// --- Generator-Startseite: eigene Laeufe ---
+// Uebernimmt alle Runs-Annotationen (Detailseite, Sortierung neueste zuerst);
+// hier nur, was abweicht: Titel und keine Spalte/Filter "Erstellt von".
+//
+annotate GeneratorService.MyRuns with @UI.HeaderInfo: {
+  TypeName: 'Lauf',
+  TypeNamePlural: 'Meine letzten Läufe',
+  Title: { Value: label },
+  Description: { Value: systems }
+};
+
+annotate GeneratorService.MyRuns with @UI.LineItem: [
+  { $Type: 'UI.DataField', Value: label },
+  { $Type: 'UI.DataField', Value: createdAt },
+  { $Type: 'UI.DataField', Value: systems },
+  { $Type: 'UI.DataField', Value: partnerCount },
+  { $Type: 'UI.DataField', Value: status, Criticality: statusCriticality }
+];
+
+annotate GeneratorService.MyRuns with @UI.SelectionFields: [
+  label, status
 ];
 
 // Geschaeftspartner des Laufs: eine Zeile je Person UND System.
@@ -200,13 +169,6 @@ annotate GeneratorService.CreatedObjects with @UI.PresentationVariant #Object: {
   SortOrder: [{ Property: objectOrder }],
   Visualizations: ['@UI.LineItem#Object']
 };
-
-// Kompakte Variante fuer die Quittung im Generator (Person ist dort schon bekannt).
-annotate GeneratorService.RunPartners with @UI.LineItem #Placement: [
-  { $Type: 'UI.DataField', Value: system },
-  { $Type: 'UI.DataField', Value: objectKey },
-  { $Type: 'UI.DataField', Value: status, Criticality: statusCriticality }
-];
 
 // Alle Objekte des Laufs: die Tabelle System | Objekt | Schluessel.
 annotate GeneratorService.CreatedObjects with {

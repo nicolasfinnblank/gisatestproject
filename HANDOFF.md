@@ -19,9 +19,12 @@ Bezeichnung („Testfall 4711"), Ersteller, Zeitpunkt, Systemen, Status.
   Mehrfachauswahl, Standard vorbelegt) → Aktion `generateAndCreate` würfelt die
   Personen aus den Pools UND legt sie sofort in allen gewählten Systemen an
   (Street→City→Address→BusinessPartner je System). Kein separater Push mehr.
-  Die Liste darunter ist nur die **Quittung des letzten Laufs** (`GeneratorData`,
-  per Nutzer, wird beim nächsten Lauf ersetzt); Detailseite zeigt je Person, in
-  welchem System sie mit welcher Nummer liegt (`placements`).
+  Die Liste darunter heißt **„Meine letzten Läufe"** (`MyRuns` = `Runs` where
+  `createdBy = $user`, neueste zuerst). Klick → Lauf mit Geschäftspartnern →
+  Person mit ihren Objekten (gleiche Seiten wie im Tracking, ohne Kopieren/
+  Löschen). Seit 17.09.2026 ersetzt das die frühere Quittung `GeneratorData`
+  (unübersichtliche Personenliste, entfernt; alte HANA-Tabelle bleibt verwaist
+  liegen, harmlos).
 - **Tracking-App:** Liste = Läufe (alle Nutzer sehen alle, Spalte „Erstellt
   von" — „Centralized"), Standard-Sortierung neueste zuerst. Detailseite =
   Kopf (Bezeichnung, Systeme, Status) + Tabelle **Geschäftspartner** (GridTable,
@@ -91,13 +94,13 @@ Bezeichnung („Testfall 4711"), Ersteller, Zeitpunkt, Systemen, Status.
 
 ## Was funktioniert (verifiziert 09.09.2026, lokal)
 - Backend: **23/23 Tests grün** (Auth, Generieren+Anlegen in 1 und 2 Systemen,
-  Quittung, zentrales Tracking, Kopieren je Lauf, Löschen mit Status, 403 bei
+  eigene Läufe (`MyRuns`), zentrales Tracking, Kopieren je Lauf, Löschen mit Status, 403 bei
   fremden Läufen, Validierung, Teilabbruch mit gesichertem Protokoll, System-
   Detail/Anlage, unbekannter Service ohne Lauf-Leiche).
 - FE-UI (im eingebauten Browser durchgeklickt): Generator-Dialog → Lauf in
   S4D+S4Q → MessageBox „Zum Tracking" → Lauf-Liste → Detailseite → Löschen in
   S4D (Status „partially deleted", Systeme „S4Q") → Kopieren S4Q→S4D (30
-  Partner-Zeilen, 120 Objekte) → Quittungs-Detail im Generator → Systeme-Dialog.
+  Partner-Zeilen, 120 Objekte) → Lauf-Detail im Generator → Systeme-Dialog.
 - **Auf BTP deployt und im Launchpad abgenommen (09.09., Stand 1e5bdef):**
   HDI-Migration (Runs neu, CreatedObjects/GeneratorData erweitert, alte Views
   TrackedPartners/PartnerSystems entfernt, Systems-Schlüssel auf String),
@@ -110,16 +113,15 @@ Bezeichnung („Testfall 4711"), Ersteller, Zeitpunkt, Systemen, Status.
   `Runs` (label|createdBy|createdAt|partnerCount|systems|status, Composition
   `objects`), `CreatedObjects` (run|system|sourceSystem|objectType|objectKey|
   sourceConcatID|createdBy|createdAt|status|deletedAt + BP-Stammdaten),
-  `GeneratorData` (Quittung: key concatID, createdBy, run),
   `Systems` (Zielsystem-Katalog: name|description|serviceName|isDefault).
 - `db/data/gisa.mdg-Systems.csv`: Seed → **S4D** (Default, BackendAPI_2) und
   **S4Q** (BackendAPI_3).
 - `srv/service.cds`: Service `GeneratorService`, @path `/service/generator`,
   @requires `Generator`. Actions: `generateAndCreate(anzahl, label, systems : many
   String)` (leer = Default-System), `copyRun(run, sourceSystem, targetSystem)`,
-  `deleteRun(run, system)`. Entities: Pools, `GeneratorData` (Quittung,
-  per-user, mit `placements`), `Runs` (read-only, ALLE Nutzer, mit `partners`
-  und `objects`), `CreatedObjects` (read-only, `@cds.redirection.target`),
+  `deleteRun(run, system)`. Entities: Pools, `Runs` (read-only, ALLE Nutzer, mit `partners`
+  und `objects`), `MyRuns` (= Runs des angemeldeten Nutzers, Generator-Startseite),
+  `CreatedObjects` (read-only, `@cds.redirection.target`),
   `RunPartners` (= CreatedObjects where objectType='BusinessPartner'),
   `Systems` (CRUD). Alle drei Protokoll-Sichten haben ein berechnetes
   `statusCriticality` (3 grün/2 gelb/1 rot) für die Farbanzeige.
@@ -131,7 +133,7 @@ Bezeichnung („Testfall 4711"), Ersteller, Zeitpunkt, Systemen, Status.
   hat zusätzlich `objects` (die 4 Objekte der Person im System), `CreatedObjects`
   ein berechnetes `objectOrder` (BP=1, Adresse=2, Straße=3, Stadt=4) zum Sortieren.
   - generateAndCreate: validiert Anzahl 1..1000, legt `Runs`-Zeile an, würfelt
-    Personen, ersetzt eigene Quittung, legt je System an, protokolliert.
+    Personen, legt je System an, protokolliert.
     *Number-Felder NICHT mitsenden (server-vergeben). Hausnummer im Muster
     `[0-9]{1,4}[a-z]` (Pool-Werte wie „88k" bleiben unverändert, sonst wird ein
     Buchstabe angehängt) — je Person EINMAL festgelegt, gleich in allen Systemen.
@@ -146,9 +148,9 @@ Bezeichnung („Testfall 4711"), Ersteller, Zeitpunkt, Systemen, Status.
 - `srv/external/BackendAPI_2.{csn,edmx,js}` + `BackendAPI_3.{csn,js}`: die zwei
   gemockten Ziel-Backends (eindeutige Namen, getrennte In-Memory-Tabellen).
   In `package.json` unter `cds.requires` als zwei `odata`-Services registriert.
-- `app/annotations.cds`: FE-Annotationen für GeneratorData (+ `placements`),
-  Runs (LineItem, PresentationVariant createdAt desc, Facets Lauf /
-  Geschäftspartner / Alle Objekte), RunPartners (+ `#Placement`-Variante),
+- `app/annotations.cds`: FE-Annotationen für Runs (LineItem, PresentationVariant createdAt desc, Facets Lauf /
+  Geschäftspartner / Alle Objekte), MyRuns (nur Titel/Spalten/Filter),
+  RunPartners,
   CreatedObjects, Systems. Facets zeigen auf `partners/@UI.PresentationVariant`
   bzw. `objects/@UI.PresentationVariant` (sortiert).
 - `app/generator/webapp/`, `app/tracking/webapp/`, `app/systems/webapp/`: drei

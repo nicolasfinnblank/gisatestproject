@@ -122,20 +122,19 @@ describe('GISA Master Data Generator', () => {
       }
     });
 
-    it('Quittung (GeneratorData) zeigt nur den letzten eigenen Lauf, mit Platzierungen', async () => {
-      await POST(`${SRV}/generateAndCreate`, { anzahl: 4, label: 'alt' }, asBob);
-      await POST(`${SRV}/generateAndCreate`, { anzahl: 2, label: 'neu', systems: ['s4d', 's4q'] }, asBob);
+    it('MyRuns (Generator-Startseite) zeigt nur eigene Laeufe, neueste zuerst', async () => {
+      await POST(`${SRV}/generateAndCreate`, { anzahl: 1, label: 'bob alt' }, asBob);
+      await POST(`${SRV}/generateAndCreate`, { anzahl: 2, label: 'bob neu', systems: ['s4d', 's4q'] }, asBob);
+      await POST(`${SRV}/generateAndCreate`, { anzahl: 1, label: 'alice' }, asAlice);
 
-      const rows = (await GET(`${SRV}/GeneratorData?$expand=placements,run`, asBob)).data.value;
-      expect(rows.length).to.equal(2);                          // nur der letzte Lauf
-      expect([...new Set(rows.map(r => r.run.label))]).to.eql(['neu']);
-      for (const r of rows) {
-        expect(r.createdBy).to.equal('bob');
-        expect(r.placements.map(p => p.system).sort()).to.eql(['S4D', 'S4Q']);
-      }
-      // bobs Quittung ist von alice nicht sichtbar
-      const aliceRows = (await GET(`${SRV}/GeneratorData`, asAlice)).data.value;
-      expect(aliceRows.every(r => r.createdBy === 'alice')).to.equal(true);
+      const mine = (await GET(`${SRV}/MyRuns?$orderby=createdAt desc&$expand=partners`, asBob)).data.value;
+      expect(mine.length).to.be.greaterThan(1);
+      expect(mine.every(r => r.createdBy === 'bob')).to.equal(true);
+      expect(mine[0].label).to.equal('bob neu');
+      expect(mine[0].partners.length).to.equal(4);              // 2 Personen x 2 Systeme
+      // Tracking (Runs) zeigt dagegen auch fremde Laeufe
+      const all = (await GET(`${SRV}/Runs`, asBob)).data.value;
+      expect(all.some(r => r.createdBy === 'alice')).to.equal(true);
     });
 
     it('lehnt unbekannte Zielsysteme und unsinnige Anzahl ab (400)', async () => {

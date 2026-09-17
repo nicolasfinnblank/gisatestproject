@@ -23,14 +23,14 @@ zwischen Systemen kopieren und im System wieder löschen.
 - **Löschen** – entfernt die Objekte eines Laufs in einem System wieder
   (`deleteRun`); das Protokoll bleibt mit Status „deleted" erhalten.
 - **Mehrbenutzer-sicher** – Kopieren und Löschen nur für eigene Läufe; die
-  Quittung des letzten Laufs sieht nur der Ersteller.
+  Startseite des Generators zeigt nur die eigenen Läufe.
 - **Fiori-Elements-UIs** – drei Oberflächen: Generator, Tracking, Zielsysteme.
 
 ## Projektstruktur
 
 | Ordner / Datei | Inhalt |
 |---|---|
-| `db/schema.cds` | Datenmodell: Pools, `Runs`, `CreatedObjects`, `GeneratorData` (Quittung), `Systems` |
+| `db/schema.cds` | Datenmodell: Pools, `Runs`, `CreatedObjects`, `Systems` |
 | `db/data/*.csv` | Startdaten (Pools + Zielsysteme), beim Start geladen |
 | `srv/service.cds` | OData-Service-Definition (Entities + Actions) |
 | `srv/service.js` | Geschäftslogik (Generieren & anlegen, Kopieren, Löschen je Lauf) |
@@ -38,7 +38,7 @@ zwischen Systemen kopieren und im System wieder löschen.
 | `srv/external/BackendAPI_2.*` | Modell + Mock des Zielsystems **S4D** |
 | `srv/external/BackendAPI_3.*` | Modell + Mock des Zielsystems **S4Q** |
 | `app/annotations.cds` | Fiori-Elements-Annotationen (Tabellen/Spalten) |
-| `app/generator/webapp/` | UI 1: Lauf anlegen (Dialog) + Quittung des letzten Laufs |
+| `app/generator/webapp/` | UI 1: Lauf anlegen (Dialog) + meine letzten Läufe (`MyRuns`) |
 | `app/tracking/webapp/` | UI 2: Läufe mit Geschäftspartnern und Objekten; Kopieren/Löschen |
 | `app/systems/webapp/` | UI 3: Zielsysteme verwalten |
 | `test/integration.test.js` | Integrationstests (23) |

@@ -5,7 +5,7 @@ const cds = require('@sap/cds');
 // Zahlen -> auf max. 4 Ziffern kuerzen und einen zufaelligen Buchstaben anhaengen.
 function toBackendHouseNumber(raw) {
     // Passt der Pool-Wert bereits (z.B. "88k"), unveraendert uebernehmen -
-    // dann stimmen Quittung und Backend ueberein.
+    // dann bleibt die Hausnummer aus dem Pool erhalten.
     if (/^[0-9]{1,4}[a-z]$/.test(String(raw ?? ''))) return String(raw);
     const digits = String(raw ?? '').replace(/\D/g, '').slice(0, 4) || '1';
     const letter = String.fromCharCode(97 + Math.floor(Math.random() * 26)); // a-z
@@ -37,7 +37,7 @@ module.exports = class GeneratorService extends cds.ApplicationService {
         const {
             StreetNames, Cities, Neighborhoods,
             FirstNames, LastNames, PostCodes,
-            HouseNumbers, GeneratorData, CreatedObjects, Runs, Systems
+            HouseNumbers, CreatedObjects, Runs, Systems
         } = this.entities;
 
         // Welches *Number-Feld traegt den Backend-Schluessel je Objekttyp.
@@ -190,18 +190,12 @@ module.exports = class GeneratorService extends cds.ApplicationService {
                     persons.push({
                         concatID: [s.ID, c.ID, n.ID, f.ID, l.ID, String(p.ID), String(h.ID)].join('-'),
                         streetName: s.streetName, cityName: c.cityName,
-                        neighborhoodName: n.neighborhoodName,
                         firstName: f.firstName, lastName: l.lastName,
-                        postCode: p.postCode, houseNumber: h.houseNumber,
-                        createdBy: owner, run_ID: runId
+                        postCode: p.postCode, houseNumber: h.houseNumber
                     });
                 }
 
-                // 4. Quittung: nur die EIGENE alte Quittung ersetzen (Multi-User-sicher)
-                await DELETE.from(GeneratorData).where({ createdBy: owner });
-                await INSERT.into(GeneratorData).entries(persons);
-
-                // 5. In jedem Zielsystem anlegen. Die Hausnummer wird je Person EINMAL
+                // 4. In jedem Zielsystem anlegen. Die Hausnummer wird je Person EINMAL
                 //    festgelegt, damit sie in allen Systemen dieselbe Adresse hat.
                 const meta = { runId, owner, now };
                 for (const sys of targets) {
@@ -220,8 +214,8 @@ module.exports = class GeneratorService extends cds.ApplicationService {
                 return { ok: true, runID: runId, message: `Lauf "${label}": ${anzahl} Geschäftspartner in ${names} angelegt.` };
             } catch (err) {
                 console.error('❌ Anlegen fehlgeschlagen:', err);
-                // Ein Fehler (req.error) wuerde die Transaktion zurueckrollen: Lauf,
-                // Quittung und Protokoll waeren weg, die im SAP-System bereits
+                // Ein Fehler (req.error) wuerde die Transaktion zurueckrollen: Lauf
+                // und Protokoll waeren weg, die im SAP-System bereits
                 // angelegten Objekte aber nicht. Deshalb bei Teil-Erfolg KEIN Fehler,
                 // sondern: Protokoll der bisherigen Objekte sichern, Lauf markieren
                 // und ok=false zurueckgeben (die UI zeigt eine Warnung).

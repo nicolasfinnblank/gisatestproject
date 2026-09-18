@@ -19,15 +19,20 @@ annotate GeneratorService.Runs with {
   systems      @title: 'Systeme';
   status       @UI.Hidden;
   statusText   @title: 'Status';
+  // Ja/Nein-Filter, vorbelegt mit Nein: nur Laeufe, die noch in Systemen liegen.
+  // Leer = alle Laeufe, Ja = nur vollstaendig geloeschte.
+  isDeleted    @title: 'Gelöscht'  @Common.FilterDefaultValue: false;
 };
 
+// Importance High: Spalten auch bei schmalem Fenster zeigen (sonst blendet
+// Fiori Elements z.B. den Status aus).
 annotate GeneratorService.Runs with @UI.LineItem: [
-  { $Type: 'UI.DataField', Value: label },
-  { $Type: 'UI.DataField', Value: createdAt },
-  { $Type: 'UI.DataField', Value: createdBy },
-  { $Type: 'UI.DataField', Value: systems },
-  { $Type: 'UI.DataField', Value: partnerCount },
-  { $Type: 'UI.DataField', Value: statusText, Criticality: statusCriticality }
+  { $Type: 'UI.DataField', Value: label,        ![@UI.Importance]: #High },
+  { $Type: 'UI.DataField', Value: createdAt,    ![@UI.Importance]: #High },
+  { $Type: 'UI.DataField', Value: createdBy,    ![@UI.Importance]: #High },
+  { $Type: 'UI.DataField', Value: systems,      ![@UI.Importance]: #High },
+  { $Type: 'UI.DataField', Value: partnerCount, ![@UI.Importance]: #High },
+  { $Type: 'UI.DataField', Value: statusText, Criticality: statusCriticality, ![@UI.Importance]: #High }
 ];
 
 annotate GeneratorService.Runs with @UI.PresentationVariant: {
@@ -36,7 +41,7 @@ annotate GeneratorService.Runs with @UI.PresentationVariant: {
 };
 
 annotate GeneratorService.Runs with @UI.SelectionFields: [
-  createdBy, statusText, label
+  createdBy, statusText, label, isDeleted
 ];
 
 annotate GeneratorService.Runs with @UI.FieldGroup #Main: {
@@ -76,11 +81,11 @@ annotate GeneratorService.MyRuns with @UI.HeaderInfo: {
 annotate GeneratorService.MyRuns with @Capabilities.SearchRestrictions.Searchable: false;
 
 annotate GeneratorService.MyRuns with @UI.LineItem: [
-  { $Type: 'UI.DataField', Value: label },
-  { $Type: 'UI.DataField', Value: createdAt },
-  { $Type: 'UI.DataField', Value: systems },
-  { $Type: 'UI.DataField', Value: partnerCount },
-  { $Type: 'UI.DataField', Value: statusText, Criticality: statusCriticality }
+  { $Type: 'UI.DataField', Value: label,        ![@UI.Importance]: #High },
+  { $Type: 'UI.DataField', Value: createdAt,    ![@UI.Importance]: #High },
+  { $Type: 'UI.DataField', Value: systems,      ![@UI.Importance]: #High },
+  { $Type: 'UI.DataField', Value: partnerCount, ![@UI.Importance]: #High },
+  { $Type: 'UI.DataField', Value: statusText, Criticality: statusCriticality, ![@UI.Importance]: #High }
 ];
 
 // Geschaeftspartner des Laufs: eine Zeile je Person UND System.

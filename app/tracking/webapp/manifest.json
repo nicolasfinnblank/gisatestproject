@@ -102,6 +102,11 @@
               "controlConfiguration": {
                 "@com.sap.vocabularies.UI.v1.LineItem": {
                   "actions": {
+                    "toggleDeleted": {
+                      "press": "gisamdg.tracking.ext.TrackingActions.onToggleDeleted",
+                      "text": "Gelöschte ein-/ausblenden",
+                      "enabled": true
+                    },
                     "backToGenerator": {
                       "press": "gisamdg.tracking.ext.TrackingActions.onBackToGenerator",
                       "text": "Zum Generator",

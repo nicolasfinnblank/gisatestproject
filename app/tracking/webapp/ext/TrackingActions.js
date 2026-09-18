@@ -226,6 +226,20 @@ sap.ui.define([
       }).catch(function (e) { MessageToast.show("Fehler: " + e.message); });
     },
 
+    // Liste: vollstaendig geloeschte Laeufe ein- oder ausblenden. Schaltet das
+    // Filterfeld "Gelöscht" um (Standard: Nein) und sucht neu. Leeres Feld = alle.
+    onToggleDeleted: function () {
+      const oFilterBar = this.byId("fe::FilterBar::Runs::FilterBar");
+      if (!oFilterBar) { return; }
+      const bHidden = (oFilterBar.getFilters().filters || []).some(function (f) { return f.sPath === "isDeleted"; });
+      const pSet = bHidden
+        ? oFilterBar.setFilterValues("isDeleted", [])
+        : oFilterBar.setFilterValues("isDeleted", "EQ", false);
+      Promise.resolve(pSet).then(function () { return oFilterBar.triggerSearch(); }).then(function () {
+        MessageToast.show(bHidden ? "Gelöschte Läufe werden angezeigt." : "Gelöschte Läufe sind ausgeblendet.");
+      });
+    },
+
     // Zurueck zum Generator.
     onBackToGenerator: function () {
       navigateTo("generator");

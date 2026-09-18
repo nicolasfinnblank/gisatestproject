@@ -275,6 +275,13 @@ describe('GISA Master Data Generator', () => {
       const done = await latestRun(asDave, 'dave');
       expect(done.systems).to.equal('');
       expect(done.status).to.equal('deleted');
+      expect(done.statusText).to.equal('Gelöscht');
+
+      // Tracking-Filter "Gelöscht = Nein" blendet den Lauf aus, "Ja" zeigt ihn.
+      const active = (await GET(`${SRV}/Runs?$filter=isDeleted eq false&$select=ID`, asDave)).data.value;
+      expect(active.some(r => r.ID === run.ID)).to.equal(false);
+      const deleted = (await GET(`${SRV}/Runs?$filter=isDeleted eq true&$select=ID`, asDave)).data.value;
+      expect(deleted.some(r => r.ID === run.ID)).to.equal(true);
     });
 
     it('lehnt erneutes Loeschen (400) und fremde Laeufe (403) ab', async () => {

@@ -15,6 +15,8 @@ service GeneratorService {
         *,
         // Geschaeftspartner des Laufs (eine Zeile je Person UND System).
         partners : Association to many RunPartners on partners.run = $self,
+        // Filter im Tracking: vollstaendig geloeschte Laeufe standardmaessig ausblenden.
+        case status when 'deleted' then true else false end as isDeleted : Boolean,
         // Anzeige in der UI: Status auf Deutsch und als Farbe (3 gruen, 2 gelb, 1 rot)
         case status when 'created' then 'Angelegt' when 'deleted' then 'Gelöscht'
                     else 'Teilweise gelöscht' end as statusText : String,

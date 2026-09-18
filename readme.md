@@ -20,6 +20,8 @@ zwischen Systemen kopieren und im System wieder löschen.
   Seite mit den vier im System angelegten Objekten und ihren Schlüsseln.
 - **Kopieren** – überträgt die Geschäftspartner eines Laufs aus einem System in
   ein oder mehrere weitere (`copyRun` je Ziel); die Kopien hängen am selben Lauf.
+- **Übersicht** – das Tracking blendet vollständig gelöschte Läufe standardmäßig
+  aus; der Knopf „Gelöschte ein-/ausblenden" zeigt die ganze Historie.
 - **Löschen** – entfernt die Objekte eines Laufs in einem oder mehreren Systemen
   wieder (`deleteRun` je System); das Protokoll bleibt mit Status „Gelöscht" erhalten.
 - **Mehrbenutzer-sicher** – Kopieren und Löschen nur für eigene Läufe; die
@@ -164,6 +166,13 @@ Anschluss eines echten S/4HANA-Systems ist Folgendes bekannt.
   zu höchstens 50 Werten ab (`selectIn` in `srv/service.js`). CAP schreibt eine
   Filterliste für OData als `feld eq a or feld eq b …` in die Adresse, ohne Blöcke
   würde sie bei großen Läufen zu lang. Abgesichert durch einen eigenen Test.
+
+**Offen für den Betrieb**
+
+- **Protokoll wächst unbegrenzt:** Gelöschte Läufe bleiben als Nachweis im Protokoll
+  (je Person und System vier Zeilen). Das Tracking blendet sie standardmäßig aus.
+  Für den Betrieb eine Aufbewahrungsfrist festlegen (z. B. 90 Tage) und vollständig
+  gelöschte Läufe per nächtlichem Job entfernen. Die Frist entscheidet GISA.
 
 **Offen, weil nur mit einem echten System prüfbar**
 

@@ -28,7 +28,13 @@ Bezeichnung, Ersteller, Zeitpunkt, Systemen und Status.
     (`MyRuns`), ohne Filterleiste und Suche. Klick auf eine Zeile öffnet die
     **Detailseite des Laufs im Tracking** (`ext/MyRunsNavigation.js`).
 - **Tracking-App**
-  - Liste aller Läufe aller Nutzer (zentral), neueste zuerst.
+  - Liste aller Läufe aller Nutzer (zentral), neueste zuerst. Vollständig
+    gelöschte Läufe sind standardmäßig ausgeblendet: berechnetes `isDeleted`,
+    Filterfeld „Gelöscht" mit `@Common.FilterDefaultValue: false`. Knopf
+    „Gelöschte ein-/ausblenden" schaltet das Feld über die FilterBar-API
+    (`byId("fe::FilterBar::Runs::FilterBar")`, `setFilterValues`, `triggerSearch`)
+    um, leeres Feld = alle. Spalten mit `UI.Importance: #High`, damit der Status
+    auch bei schmalem Fenster sichtbar bleibt.
   - Detailseite: Laufdaten + Tabelle Geschäftspartner (eine Zeile je Person UND
     System). Klick auf eine Person → ihre vier Objekte mit Nummern.
   - Kopfknöpfe „In weiteres System kopieren" (eine Quelle, Ziele als

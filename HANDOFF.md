@@ -39,10 +39,12 @@ Bezeichnung, Ersteller, Zeitpunkt, Systemen und Status.
     System). Klick auf eine Person → ihre vier Objekte mit Nummern.
   - Kopfknöpfe „In weiteres System kopieren" (eine Quelle, Ziele als
     Mehrfachauswahl, nur bei einem möglichen Ziel vorbelegt; `copyRun` je Ziel.
-    Kopien hängen am selben Lauf mit `sourceSystem`) und „In System löschen" (Mehrfachauswahl der
+    Kopien hängen am selben Lauf mit `sourceSystem`; Haken „Danach im
+    Quellsystem löschen (verschieben)" hängt nach ALLEN Kopien ein `deleteRun`
+    der Quelle an – reine UI-Kombination, kein eigener Endpunkt) und „In System löschen" (Mehrfachauswahl der
     Systeme, in denen der Lauf liegt; nur bei genau einem System vorbelegt. Die UI
     ruft `deleteRun` nacheinander je System auf. Kopieren und Löschen teilen sich
-    `runEach` in `TrackingActions.js`: stoppt beim ersten Fehler und meldet, was
+    `runSteps` in `TrackingActions.js`: stoppt beim ersten Fehler und meldet, was
     schon erledigt ist. Protokoll bleibt mit `status = 'deleted'` +
     `deletedAt`). Beides nur
     für eigene Läufe (sonst 403).

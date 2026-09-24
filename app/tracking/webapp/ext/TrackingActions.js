@@ -8,8 +8,9 @@ sap.ui.define([
   "sap/ui/core/Item",
   "sap/m/Label",
   "sap/m/Text",
-  "sap/m/VBox"
-], function (MessageToast, MessageBox, Dialog, Button, Select, MultiComboBox, Item, Label, Text, VBox) {
+  "sap/m/VBox",
+  "sap/m/CheckBox"
+], function (MessageToast, MessageBox, Dialog, Button, Select, MultiComboBox, Item, Label, Text, VBox, CheckBox) {
   "use strict";
 
   // Adresse der Schwester-Apps als Rueckfall, wenn keine Launchpad-Shell da ist
@@ -96,19 +97,20 @@ sap.ui.define([
     return oSel;
   }
 
-  // Fuehrt eine Aktion nacheinander je gewaehltem System aus (Kopieren/Loeschen).
-  // Scheitert ein System, wird gestoppt und genau gesagt, was schon erledigt ist.
-  function runEach(aIds, fnCall, aSystems, sWhat, oDialog, oApi, sDefault) {
+  // Fuehrt Schritte nacheinander aus (je System ein Kopieren/Loeschen).
+  // Schritt: { system: ID, what: "Kopieren", call: () => Promise }.
+  // Scheitert ein Schritt, wird gestoppt und genau gesagt, was schon erledigt ist.
+  function runSteps(aSteps, aSystems, oDialog, oApi, sDefault) {
     const aDone = [];
     const nameOf = function (sId) {
       const o = aSystems.find(function (s) { return s.ID === sId; });
       return o ? o.name : sId;
     };
-    aIds.reduce(function (p, sId) {
+    aSteps.reduce(function (p, oStep) {
       return p.then(function () {
-        return fnCall(sId)
+        return oStep.call()
           .then(function (msg) { aDone.push(msg); })
-          .catch(function (e) { e.system = sId; throw e; });
+          .catch(function (e) { e.step = oStep; throw e; });
       });
     }, Promise.resolve()).then(function () {
       oDialog.close();
@@ -117,7 +119,7 @@ sap.ui.define([
     }).catch(function (e) {
       oDialog.close();
       refresh(oApi);
-      MessageBox.error(sWhat + " in " + nameOf(e.system) + " fehlgeschlagen: " + e.message
+      MessageBox.error(e.step.what + " in " + nameOf(e.step.system) + " fehlgeschlagen: " + e.message
         + (aDone.length ? "\n\nBereits erledigt:\n" + aDone.join("\n") : ""));
     });
   }
@@ -125,6 +127,8 @@ sap.ui.define([
   return {
     // Kopiert die Geschaeftspartner DIESES Laufs aus einem System, in dem er
     // liegt, in ein oder mehrere weitere Systeme. Die Kopien haengen am selben Lauf.
+    // Optional "verschieben": erst ALLE Kopien, danach Loeschen in der Quelle -
+    // scheitert eine Kopie, bleibt die Quelle unangetastet.
     onCopy: function (oContext) {
       const oApi = this;
       const oRun = currentRun(oContext);
@@ -147,6 +151,14 @@ sap.ui.define([
           oTo.addItem(new Item({ key: s.ID, text: s.name + (s.description ? " – " + s.description : "") }));
         });
         if (aTargets.length === 1) { oTo.setSelectedKeys([aTargets[0].ID]); }
+        const oMove = new CheckBox({
+          text: "Danach im Quellsystem löschen (verschieben)",
+          select: function (oEvent) {
+            const bMove = oEvent.getParameter("selected");
+            oDialog.setTitle("Lauf \"" + oRun.label + "\" " + (bMove ? "verschieben" : "kopieren"));
+            oDialog.getBeginButton().setText(bMove ? "Verschieben" : "Kopieren");
+          }
+        });
 
         const oDialog = new Dialog({
           title: "Lauf \"" + oRun.label + "\" kopieren",
@@ -154,7 +166,8 @@ sap.ui.define([
           content: new VBox({
             items: [
               new Label({ text: "Von (Quelle):", labelFor: oFrom }), oFrom,
-              new Label({ text: "Nach (Ziele, Mehrfachauswahl):", labelFor: oTo }), oTo
+              new Label({ text: "Nach (Ziele, Mehrfachauswahl):", labelFor: oTo }), oTo,
+              oMove
             ]
           }).addStyleClass("sapUiContentPadding"),
           beginButton: new Button({
@@ -163,12 +176,19 @@ sap.ui.define([
             press: function () {
               const aIds = oTo.getSelectedKeys();
               if (!aIds.length) { MessageToast.show("Bitte mindestens ein Zielsystem wählen."); return; }
+              const sFrom = oFrom.getSelectedKey();
+              const aSteps = aIds.map(function (sId) {
+                return { system: sId, what: "Kopieren", call: function () {
+                  return callAction("copyRun", { run: oRun.ID, sourceSystem: sFrom, targetSystem: sId });
+                } };
+              });
+              if (oMove.getSelected()) {
+                aSteps.push({ system: sFrom, what: "Löschen", call: function () {
+                  return callAction("deleteRun", { run: oRun.ID, system: sFrom });
+                } });
+              }
               oDialog.setBusy(true);
-              runEach(aIds, function (sId) {
-                return callAction("copyRun", {
-                  run: oRun.ID, sourceSystem: oFrom.getSelectedKey(), targetSystem: sId
-                });
-              }, aTargets, "Kopieren", oDialog, oApi, "Kopiert");
+              runSteps(aSteps, aSystems, oDialog, oApi, "Kopiert");
             }
           }),
           endButton: new Button({ text: "Abbrechen", press: function () { oDialog.close(); } }),
@@ -214,9 +234,11 @@ sap.ui.define([
               const aIds = oBox.getSelectedKeys();
               if (!aIds.length) { MessageToast.show("Bitte mindestens ein System wählen."); return; }
               oDialog.setBusy(true);
-              runEach(aIds, function (sId) {
-                return callAction("deleteRun", { run: oRun.ID, system: sId });
-              }, aSources, "Löschen", oDialog, oApi, "Gelöscht");
+              runSteps(aIds.map(function (sId) {
+                return { system: sId, what: "Löschen", call: function () {
+                  return callAction("deleteRun", { run: oRun.ID, system: sId });
+                } };
+              }), aSources, oDialog, oApi, "Gelöscht");
             }
           }),
           endButton: new Button({ text: "Abbrechen", press: function () { oDialog.close(); } }),

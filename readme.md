@@ -20,6 +20,8 @@ zwischen Systemen kopieren und im System wieder löschen.
   Seite mit den vier im System angelegten Objekten und ihren Schlüsseln.
 - **Kopieren** – überträgt die Geschäftspartner eines Laufs aus einem System in
   ein oder mehrere weitere (`copyRun` je Ziel); die Kopien hängen am selben Lauf.
+  Mit dem Haken „verschieben" wird danach die Quelle gelöscht (erst wenn alle
+  Kopien geklappt haben).
 - **Übersicht** – das Tracking blendet vollständig gelöschte Läufe standardmäßig
   aus; der Knopf „Gelöschte ein-/ausblenden" zeigt die ganze Historie.
 - **Löschen** – entfernt die Objekte eines Laufs in einem oder mehreren Systemen
